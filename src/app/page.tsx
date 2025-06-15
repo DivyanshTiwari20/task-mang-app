@@ -1,7 +1,43 @@
-
+// src/app/page.tsx
+'use client'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/lib/auth'
 
 export default function Home() {
-  return (
-    <h1>hi world</h1>
-  );
+  const { user, loading } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!loading) {
+      if (user) {
+        // Redirect based on role
+        switch (user.role) {
+          case 'admin':
+            router.push('/admin-dashboard')
+            break
+          case 'leader':
+            router.push('/leader-dashboard')
+            break
+          case 'employee':
+            router.push('/employee-dashboard')
+            break
+          default:
+            router.push('/login')
+        }
+      } else {
+        router.push('/login')
+      }
+    }
+  }, [user, loading, router])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
+      </div>
+    )
+  }
+
+  return null
 }
