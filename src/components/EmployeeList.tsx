@@ -1,112 +1,188 @@
 // src/components/EmployeeList.tsx
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react' // Import useRef
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search } from 'lucide-react'
-import { supabase, User } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
+import { useRouter } from 'next/navigation'
+import type { CustomUser } from '@/lib/auth';
 
 interface EmployeeListProps {
   showAssignTask?: boolean
 }
 
-interface EmployeeWithAttendance extends User {
+interface EmployeeWithAttendance extends CustomUser {
   todayAttendance?: {
     check_in: string | null
     check_out: string | null
   }
   monthlyAttendance?: number
+  department?: {
+    id: string;
+    name: string;
+  }
 }
 
 export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
-  const { user } = useAuth()
-  const [employees, setEmployees] = useState<EmployeeWithAttendance[]>([])
-  const [filteredEmployees, setFilteredEmployees] = useState<EmployeeWithAttendance[]>([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [loading, setLoading] = useState(true)
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const [employees, setEmployees] = useState<EmployeeWithAttendance[]>([]);
+  const [filteredEmployees, setFilteredEmployees] = useState<EmployeeWithAttendance[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dataLoading, setDataLoading] = useState(true);
+
+  // Ref to track if component has mounted on client
+  const hasMounted = useRef(false);
 
   useEffect(() => {
-    fetchEmployees()
-  }, [user])
+    hasMounted.current = true; // Set to true when component mounts on client
+    // Only fetch employees once authentication status is determined AND on client
+    if (!authLoading && hasMounted.current) {
+      fetchEmployees();
+    }
+    // Cleanup function (optional, but good practice for refs)
+    return () => {
+      hasMounted.current = false;
+    };
+  }, [user, authLoading]);
 
   useEffect(() => {
     // Filter employees based on search term
-    const filtered = employees.filter(emp => 
-      emp.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.department?.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    setFilteredEmployees(filtered)
-  }, [employees, searchTerm])
+    const filtered = employees.filter(emp =>
+      emp.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      emp.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      emp.department?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredEmployees(filtered);
+  }, [employees, searchTerm]);
 
   const fetchEmployees = async () => {
-    if (!user) return
+    if (!user) {
+      setDataLoading(false);
+      setEmployees([]);
+      return;
+    }
 
+    setDataLoading(true);
     let query = supabase
       .from('users')
       .select(`
-        *,
-        department:departments(*)
-      `)
+        id,
+        full_name,
+        username,
+        role,
+        department_id,
+        department:departments(id, name)
+      `);
 
-    // If leader, only show their department employees
-    if (user.role === 'leader') {
-      query = query.eq('department_id', user.department_id)
+    if (user.role === 'admin') {
+      // Admins can see all users
+    } else if (user.role === 'leader') {
+      // Leaders can only see employees within their own department
+      query = query
+        .eq('department_id', user.department_id)
+        .eq('role', 'employee');
+    } else {
+      console.log('Employee or unauthorized user attempting to view employee list.');
+      setDataLoading(false);
+      setEmployees([]);
+      return;
     }
 
-    const { data: usersData } = await query
+    const { data: usersData, error: usersError } = await query;
+
+    if (usersError) {
+      console.error('Error fetching users:', usersError.message);
+      setDataLoading(false);
+      return;
+    }
 
     if (usersData) {
-      // Fetch attendance data for each user
+      // Date calculations should ideally be done consistently or on client after mount
+      // For hydration, ensure these dates are stable if used in initial render.
+      // Since fetchEmployees is in useEffect, these should be client-side.
+      const today = new Date();
+      const todayISO = today.toISOString().split('T')[0];
+      const currentMonth = today.getMonth() + 1;
+      const currentYear = today.getFullYear();
+
       const employeesWithAttendance = await Promise.all(
         usersData.map(async (emp) => {
           // Get today's attendance
-          const today = new Date().toISOString().split('T')[0]
-          const { data: todayData } = await supabase
+          const { data: todayData, error: todayError } = await supabase
             .from('attendance')
             .select('check_in, check_out')
             .eq('user_id', emp.id)
-            .eq('date', today)
-            .single()
+            .eq('date', todayISO) // Use consistent todayISO
+            .single();
+
+          if (todayError && todayError.code !== 'PGRST116') {
+              console.error(`Error fetching today's attendance for ${emp.id}:`, todayError.message);
+          }
 
           // Get monthly attendance count
-          const currentMonth = new Date().getMonth() + 1
-          const currentYear = new Date().getFullYear()
-          const { data: monthlyData } = await supabase
+          const { data: monthlyData, error: monthlyError } = await supabase
             .from('attendance')
-            .select('*')
+            .select('id')
             .eq('user_id', emp.id)
             .gte('date', `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`)
-            .not('check_in', 'is', null)
+            .not('check_in', 'is', null);
+
+          if (monthlyError) {
+            console.error(`Error fetching monthly attendance for ${emp.id}:`, monthlyError.message);
+          }
 
           return {
             ...emp,
             todayAttendance: todayData,
             monthlyAttendance: monthlyData?.length || 0
-          }
+          };
         })
-      )
-
-      setEmployees(employeesWithAttendance)
+      );
+      setEmployees(employeesWithAttendance);
     }
-    setLoading(false)
-  }
+    setDataLoading(false);
+  };
 
   const getAttendancePercentage = (monthlyAttendance: number) => {
-    const workingDaysThisMonth = new Date().getDate() // Simplified calculation
-    return Math.round((monthlyAttendance / workingDaysThisMonth) * 100)
-  }
+    // Only calculate this if the component has mounted to prevent SSR vs Client mismatches
+    if (!hasMounted.current) return 0; // Return 0 or a placeholder during SSR
+
+    const today = new Date(); // Recalculate on client for accuracy
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const workingDaysThisMonth = Math.max(0, today.getDate());
+    if (workingDaysThisMonth === 0) return 0;
+    return Math.round((monthlyAttendance / workingDaysThisMonth) * 100);
+  };
 
   const isCheckedInToday = (attendance?: { check_in: string | null }) => {
-    return !!attendance?.check_in
+    return !!attendance?.check_in;
+  };
+
+  const handleAssignTaskClick = (employeeId: string, employeeRole: string) => {
+    if (user?.role === 'admin') {
+      router.push(`/admin-dashboard/assign-task/${employeeId}`);
+    } else if (user?.role === 'leader') {
+      router.push(`/leader-dashboard/assign-task/${employeeId}`);
+    }
+  };
+
+  if (authLoading || dataLoading) {
+    return <div className="text-center py-4">Loading employees...</div>;
   }
 
-  if (loading) {
-    return <div className="text-center py-4">Loading employees...</div>
+  // Only render employee list if data is loaded and hasMounted
+  // This ensures the client-side rendering matches what's expected after hydration
+  if (!hasMounted.current) {
+    // This state indicates the component is still in its SSR phase or just hydrating
+    // Return a minimal placeholder to prevent mismatches
+    return <div className="text-center py-4">Loading...</div>;
   }
+
 
   return (
     <div className="space-y-4">
@@ -123,6 +199,11 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
 
       {/* Employee List */}
       <div className="space-y-3">
+        {filteredEmployees.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            No employees found or you do not have permission to view this list.
+          </div>
+        )}
         {filteredEmployees.map((employee) => (
           <div
             key={employee.id}
@@ -131,10 +212,10 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
             <div className="flex items-center space-x-3">
               <Avatar className="h-10 w-10">
                 <AvatarFallback className="bg-blue-100 text-blue-600">
-                  {employee.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                  {employee.full_name?.split(' ').map(n => n[0]).join('').toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              
+
               <div>
                 <div className="font-medium text-gray-900">
                   {employee.full_name}
@@ -142,33 +223,37 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
                 <div className="flex items-center space-x-2 text-sm text-gray-500">
                   <span>{employee.department?.name}</span>
                   <span>•</span>
+                  {/* Ensure percentage is calculated only after mount */}
                   <span>{getAttendancePercentage(employee.monthlyAttendance || 0)}% attendance</span>
                 </div>
                 <div className="flex items-center space-x-2 mt-1">
-                  <Badge 
+                  <Badge
                     variant={isCheckedInToday(employee.todayAttendance) ? "default" : "secondary"}
                     className={isCheckedInToday(employee.todayAttendance) ? "bg-green-100 text-green-800" : ""}
                   >
                     {isCheckedInToday(employee.todayAttendance) ? 'Checked In' : 'Not Checked In'}
                   </Badge>
+                  {employee.role && employee.role !== 'employee' && (
+                     <Badge variant="outline" className="bg-gray-100 text-gray-800">
+                        {employee.role.charAt(0).toUpperCase() + employee.role.slice(1)}
+                     </Badge>
+                  )}
                 </div>
               </div>
             </div>
 
-            {showAssignTask && (
-              <Button variant="outline" size="sm">
+            {showAssignTask && user && (user.role === 'admin' || user.role === 'leader') && employee.role === 'employee' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleAssignTaskClick(employee.id, employee.role)}
+              >
                 Assign Task
               </Button>
             )}
           </div>
         ))}
-
-        {filteredEmployees.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            No employees found
-          </div>
-        )}
       </div>
     </div>
-  )
+  );
 }

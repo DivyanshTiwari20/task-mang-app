@@ -1,82 +1,116 @@
-// src/app/login/page.tsx
-'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useAuth } from '@/lib/auth'
+// app/login/page.tsx (Example Login Page)
+'use client';
+
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth'; // Import useAuth hook
+// Import your UI components (Input, Button etc.)
+import { Input } from '@/components/ui/input'; // Assuming shadcn/ui Input
+import { Button } from '@/components/ui/button'; // Assuming shadcn/ui Button
+
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const { login } = useAuth()
-  const router = useRouter()
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [formError, setFormError] = useState('');
+  const router = useRouter();
+  const { login, loading, user } = useAuth(); // Destructure login, loading, and user from useAuth
+
+  // Optional: Redirect if user is already logged in
+  // This useEffect triggers when `user` or `loading` state changes from useAuth
+  React.useEffect(() => {
+    if (user && !loading) {
+      if (user.role === 'admin') {
+        router.push('/admin-dashboard');
+      } else if (user.role === 'leader') {
+        router.push('/leader-dashboard');
+      } else if (user.role === 'employee') {
+        router.push('/employee-dashboard');
+      }
+      // If user has no specific role or role not recognized, redirect to a default dashboard
+      // else {
+      //   router.push('/dashboard');
+      // }
+    }
+  }, [user, loading, router]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
+    e.preventDefault();
+    setFormError('');
 
-    const success = await login(username, password)
-    
-    if (success) {
-      // Redirect will be handled by the auth context
-      router.push('/')
-    } else {
-      setError('Invalid username or password')
+    if (!email || !password) {
+      setFormError('Please enter both email and password.');
+      return;
     }
-    
-    setLoading(false)
-  }
+
+    // Call the login function provided by the AuthContext
+    const { success, error } = await login(email, password);
+
+    if (success) {
+      // Login successful, the useEffect above will handle redirection
+      console.log('Login successful!');
+    } else {
+      // Display error message from the login function
+      setFormError(error || 'An unexpected error occurred during login.');
+    }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <div className="w-3 h-3 bg-black rounded-sm"></div>
-            <CardTitle className="text-2xl font-bold">Askus</CardTitle>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Sign in to your account
+          </h2>
+        </div>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {/* Email Input */}
+          <div>
+            <label htmlFor="email-address" className="sr-only">Email address</label>
+            <Input
+              id="email-address"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+            />
           </div>
-          <p className="text-gray-600">Sign in to your account</p>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Input
-                type="text"
-                placeholder="Username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                className="w-full"
-              />
-            </div>
-            <div>
-              <Input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full"
-              />
-            </div>
-            {error && (
-              <p className="text-red-500 text-sm text-center">{error}</p>
-            )}
-            <Button 
-              type="submit" 
-              className="w-full bg-blue-600 hover:bg-blue-700"
+          {/* Password Input */}
+          <div>
+            <label htmlFor="password" className="sr-only">Password</label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+            />
+          </div>
+
+          {formError && (
+            <p className="text-red-500 text-sm text-center">{formError}</p>
+          )}
+
+          <div>
+            <Button
+              type="submit"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               disabled={loading}
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? 'Signing In...' : 'Sign in'}
             </Button>
-          </form>
-        </CardContent>
-      </Card>
+          </div>
+        </form>
+      </div>
     </div>
-  )
+  );
 }

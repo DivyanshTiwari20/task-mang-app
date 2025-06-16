@@ -91,7 +91,7 @@ export function AttendanceCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Today's Attendance</CardTitle>
+        <CardTitle className="text-lg">Today&apos;s Attendance</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex justify-between items-center">

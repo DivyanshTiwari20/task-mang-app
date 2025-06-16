@@ -45,7 +45,7 @@ export default function AdminDashboard() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
-          <p className="text-gray-600 mt-2">You don't have permission to view this page.</p>
+          <p className="text-gray-600 mt-2">You don&apos;t have permission to view this page.</p>
         </div>
       </div>
     )
@@ -58,7 +58,7 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-600">Manage your team's attendance and tasks</p>
+          <p className="text-gray-600">Manage your team&apos;s attendance and tasks</p>
         </div>
 
         {/* Stats Cards */}
@@ -106,7 +106,7 @@ export default function AdminDashboard() {
                 {loading ? '...' : totalEmployees > 0 ? `${Math.round((todayCheckedIn / totalEmployees) * 100)}%` : '0%'}
               </div>
               <div className="text-xs text-gray-500 mt-1">
-                Today's Rate
+                Today&apos;s Rate
               </div>
             </CardContent>
           </Card>
