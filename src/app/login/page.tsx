@@ -1,116 +1,106 @@
-// app/login/page.tsx (Example Login Page)
-'use client';
-
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth'; // Import useAuth hook
-// Import your UI components (Input, Button etc.)
-import { Input } from '@/components/ui/input'; // Assuming shadcn/ui Input
-import { Button } from '@/components/ui/button'; // Assuming shadcn/ui Button
-
+// src/app/login/page.tsx
+'use client'
+import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useAuth } from '@/lib/auth'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [formError, setFormError] = useState('');
-  const router = useRouter();
-  const { login, loading, user } = useAuth(); // Destructure login, loading, and user from useAuth
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [formLoading, setFormLoading] = useState(false) // Use a separate loading state for the form submission
+  const [formError, setFormError] = useState('') // Use a separate error state for form submission messages
+  const { login, loading: authLoading, user } = useAuth() // Destructure login, authLoading, and user from useAuth
+  const router = useRouter()
 
-  // Optional: Redirect if user is already logged in
-  // This useEffect triggers when `user` or `loading` state changes from useAuth
-  React.useEffect(() => {
-    if (user && !loading) {
+  // This useEffect handles redirection based on user's role after login or on initial load
+  useEffect(() => {
+    // Only redirect if user data is loaded and not currently in an authentication loading state
+    if (user && !authLoading) {
       if (user.role === 'admin') {
         router.push('/admin-dashboard');
       } else if (user.role === 'leader') {
         router.push('/leader-dashboard');
       } else if (user.role === 'employee') {
         router.push('/employee-dashboard');
+      } else {
+        // Fallback for roles not explicitly handled, e.g., redirect to a general dashboard
+        router.push('/dashboard');
       }
-      // If user has no specific role or role not recognized, redirect to a default dashboard
-      // else {
-      //   router.push('/dashboard');
-      // }
     }
-  }, [user, loading, router]);
-
+  }, [user, authLoading, router]); // Dependencies for useEffect
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError('');
+    setFormLoading(true); // Start form loading
+    setFormError(''); // Clear previous form errors
 
-    if (!email || !password) {
-      setFormError('Please enter both email and password.');
+    if (!username || !password) {
+      setFormError('Please enter both username and password.');
+      setFormLoading(false);
       return;
     }
 
-    // Call the login function provided by the AuthContext
-    const { success, error } = await login(email, password);
+    // Call the login function from AuthContext
+    const { success, error: loginError } = await login(username, password);
 
     if (success) {
-      // Login successful, the useEffect above will handle redirection
       console.log('Login successful!');
+      // Redirection will be handled by the useEffect above
     } else {
-      // Display error message from the login function
-      setFormError(error || 'An unexpected error occurred during login.');
+      setFormError(loginError || 'Invalid username or password.'); // Display error from login function or a generic one
     }
+
+    setFormLoading(false); // End form loading
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
-          </h2>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {/* Email Input */}
-          <div>
-            <label htmlFor="email-address" className="sr-only">Email address</label>
-            <Input
-              id="email-address"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              placeholder="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-            />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <div className="flex items-center justify-center space-x-2 mb-4">
+            <div className="w-3 h-3 bg-black rounded-sm"></div>
+            <CardTitle className="text-2xl font-bold">Askus</CardTitle>
           </div>
-          {/* Password Input */}
-          <div>
-            <label htmlFor="password" className="sr-only">Password</label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-            />
-          </div>
-
-          {formError && (
-            <p className="text-red-500 text-sm text-center">{formError}</p>
-          )}
-
-          <div>
+          <p className="text-gray-600">Sign in to your account</p>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Input
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                className="w-full"
+              />
+            </div>
+            <div>
+              <Input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full"
+              />
+            </div>
+            {formError && ( // Display form-specific error
+              <p className="text-red-500 text-sm text-center">{formError}</p>
+            )}
             <Button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+              disabled={formLoading || authLoading} // Disable if form is submitting or auth is loading
             >
-              {loading ? 'Signing In...' : 'Sign in'}
+              {formLoading ? 'Signing in...' : 'Sign In'}
             </Button>
-          </div>
-        </form>
-      </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

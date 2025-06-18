@@ -1,49 +1,67 @@
 // app/admin-dashboard/assign-task/[employeeId]/page.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase'; // Corrected: Changed from 'createClient' to 'supabase'
+import React, { useState, useEffect, useRef } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/auth'; // Import useAuth to get current user's ID
 // Assuming you have these UI components from shadcn/ui or similar
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar'; // Or your date picker component
-import { ChevronLeft } from 'lucide-react'; // For the back button icon
+import { Calendar } from '@/components/ui/calendar';
+import { ChevronLeft } from 'lucide-react';
 
 // Define the priority levels
 type Priority = 'high' | 'medium' | 'low' | 'critical';
 
-interface AssignTaskPageProps {
-  params: {
-    employeeId: string;
-  };
-}
-
-export default function AdminAssignTaskPage({ params }: AssignTaskPageProps) {
+export default function AdminAssignTaskPage() {
   const router = useRouter();
-  const { employeeId } = params;
+  const pathname = usePathname();
+  const pathSegments = pathname.split('/');
+  const employeeId = pathSegments[pathSegments.length - 1];
+
+  const { user } = useAuth(); // Get the current logged-in user from AuthContext
 
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDescription, setTaskDescription] = useState('');
-  const [priority, setPriority] = useState<Priority>('medium'); // Default to medium
-  const [dueDate, setDueDate] = useState<Date | undefined>(undefined); // Calendar expects Date object
-  const [assigneeName, setAssigneeName] = useState('Employee'); // To display the employee's name
-  const [assigneeDepartmentId, setAssigneeDepartmentId] = useState<string | null>(null);
+  const [priority, setPriority] = useState<Priority>('medium');
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [assigneeName, setAssigneeName] = useState('Employee');
+  const [assigneeDepartmentId, setAssigneeDepartmentId] = useState<number | null>(null); // Changed type to number | null
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
+  const hasMounted = useRef(false);
+
   useEffect(() => {
-    // Fetch employee details to display their name and department
+    hasMounted.current = true;
+  }, []);
+
+  useEffect(() => {
     const fetchEmployeeDetails = async () => {
+      if (!employeeId || employeeId === '[employeeId]') {
+        setError('Employee ID not found in URL.');
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
+      // Ensure employeeId is converted to a number if your DB uses numbers
+      const empIdNum = parseInt(employeeId, 10);
+      if (isNaN(empIdNum)) {
+        setError('Invalid Employee ID format.');
+        setLoading(false);
+        return;
+      }
+
       const { data: employee, error } = await supabase
-        .from('users') // Querying the 'users' table
+        .from('users')
         .select('full_name, department_id')
-        .eq('id', employeeId)
+        .eq('id', empIdNum) // Query with numeric ID
         .single();
 
       if (error || !employee) {
@@ -65,8 +83,20 @@ export default function AdminAssignTaskPage({ params }: AssignTaskPageProps) {
     setMessage('');
     setError('');
 
-    if (!taskTitle || !taskDescription || !dueDate || !assigneeDepartmentId) {
-      setError('Please fill in all required fields (Task Title, Description, Due Date, and ensure employee department is loaded).');
+    // Ensure current user is available before proceeding
+    if (!user) {
+      setError('You must be logged in to assign tasks.');
+      return;
+    }
+
+    if (!taskTitle || !taskDescription || !dueDate || !assigneeDepartmentId || !employeeId || employeeId === '[employeeId]') {
+      setError('Please fill in all required fields (Task Title, Description, Due Date), ensure employee department is loaded, and employee ID is valid.');
+      return;
+    }
+
+    const empIdNum = parseInt(employeeId, 10);
+    if (isNaN(empIdNum)) {
+      setError('Invalid Employee ID format.');
       return;
     }
 
@@ -78,10 +108,11 @@ export default function AdminAssignTaskPage({ params }: AssignTaskPageProps) {
         body: JSON.stringify({
           title: taskTitle,
           description: taskDescription,
-          assignee_id: employeeId,
-          department_id: assigneeDepartmentId, // Pass the assignee's department ID
-          due_date: dueDate.toISOString().split('T')[0], // Format to YYYY-MM-DD
-          priority: priority, // Include priority
+          assignee_id: empIdNum, // Send numeric employee ID
+          department_id: assigneeDepartmentId,
+          due_date: dueDate.toISOString().split('T')[0],
+          priority: priority,
+          assigned_by_id: user.id, // IMPORTANT: Send the ID of the current logged-in user
         }),
       });
 
@@ -92,13 +123,10 @@ export default function AdminAssignTaskPage({ params }: AssignTaskPageProps) {
       }
 
       setMessage(data.message);
-      // Optionally clear the form or redirect
       setTaskTitle('');
       setTaskDescription('');
       setPriority('medium');
       setDueDate(undefined);
-      // Redirect back to employee list or show success message
-      // router.push('/admin-dashboard'); // Example redirect
     } catch (err: any) {
       setError(err.message);
       console.error('Error assigning task:', err);
@@ -171,13 +199,21 @@ export default function AdminAssignTaskPage({ params }: AssignTaskPageProps) {
 
           <div>
             <label htmlFor="due-date" className="block text-sm font-medium text-gray-700">Deadline Date</label>
-            <Calendar
-              mode="single"
-              selected={dueDate}
-              onSelect={setDueDate}
-              initialFocus
-              className="rounded-md border p-2 mt-1 mx-auto" // Center the calendar
-            />
+            {/* Conditionally render Calendar only when mounted on client */}
+            {hasMounted.current ? (
+              <Calendar
+                mode="single"
+                selected={dueDate}
+                onSelect={setDueDate}
+                initialFocus
+                className="rounded-md border p-2 mt-1 mx-auto"
+              />
+            ) : (
+              // This placeholder is consistently rendered on both server and client
+              <div className="rounded-md border p-2 mt-1 mx-auto w-full max-w-sm text-center py-12 bg-gray-100 text-gray-500">
+                Loading Calendar...
+              </div>
+            )}
           </div>
 
           {message && <div className="text-green-600 text-sm mt-2">{message}</div>}

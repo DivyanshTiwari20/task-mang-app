@@ -1,27 +1,30 @@
 // src/components/EmployeeList.tsx
 'use client'
-import { useState, useEffect, useRef } from 'react' // Import useRef
+import { useState, useEffect, useRef } from 'react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase' // Directly import supabase client
 import { useAuth } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
+
+// Use CustomUser from lib/auth.tsx to ensure consistent type definition
 import type { CustomUser } from '@/lib/auth';
 
 interface EmployeeListProps {
   showAssignTask?: boolean
 }
 
+// Extend CustomUser to include attendance data for display purposes
 interface EmployeeWithAttendance extends CustomUser {
   todayAttendance?: {
     check_in: string | null
     check_out: string | null
   }
   monthlyAttendance?: number
-  department?: {
+  department?: { // Ensure this matches your 'departments' table structure for the join
     id: string;
     name: string;
   }
@@ -33,7 +36,7 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
   const [employees, setEmployees] = useState<EmployeeWithAttendance[]>([]);
   const [filteredEmployees, setFilteredEmployees] = useState<EmployeeWithAttendance[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [dataLoading, setDataLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true); // Separate loading state for data fetching
 
   // Ref to track if component has mounted on client
   const hasMounted = useRef(false);
@@ -63,13 +66,13 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
   const fetchEmployees = async () => {
     if (!user) {
       setDataLoading(false);
-      setEmployees([]);
+      setEmployees([]); // Clear any previous data
       return;
     }
 
-    setDataLoading(true);
+    setDataLoading(true); // Start data loading
     let query = supabase
-      .from('users')
+      .from('users') // Querying the 'users' table
       .select(`
         id,
         full_name,
@@ -79,17 +82,21 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
         department:departments(id, name)
       `);
 
+    // Conditional filtering based on the logged-in user's role
     if (user.role === 'admin') {
-      // Admins can see all users
+      // Admins can see all users (no additional role filter here)
+      // If you specifically wanted to exclude 'admin' from the list itself, you could add:
+      // query = query.not('role', 'eq', 'admin');
     } else if (user.role === 'leader') {
       // Leaders can only see employees within their own department
       query = query
-        .eq('department_id', user.department_id)
-        .eq('role', 'employee');
+        .eq('department_id', user.department_id) // Filter by leader's department
+        .eq('role', 'employee'); // Only show 'employee' roles for leaders
     } else {
+      // For 'employee' role or any unrecognized role, they shouldn't see this list in its current form
       console.log('Employee or unauthorized user attempting to view employee list.');
       setDataLoading(false);
-      setEmployees([]);
+      setEmployees([]); // Ensure list is empty
       return;
     }
 
@@ -120,17 +127,17 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
             .eq('date', todayISO) // Use consistent todayISO
             .single();
 
-          if (todayError && todayError.code !== 'PGRST116') {
+          if (todayError && todayError.code !== 'PGRST116') { // PGRST116 means no rows found (which is fine)
               console.error(`Error fetching today's attendance for ${emp.id}:`, todayError.message);
           }
 
           // Get monthly attendance count
           const { data: monthlyData, error: monthlyError } = await supabase
             .from('attendance')
-            .select('id')
+            .select('id') // Just fetch ID to count rows
             .eq('user_id', emp.id)
             .gte('date', `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`)
-            .not('check_in', 'is', null);
+            .not('check_in', 'is', null); // Count only days with a check-in
 
           if (monthlyError) {
             console.error(`Error fetching monthly attendance for ${emp.id}:`, monthlyError.message);
@@ -145,7 +152,7 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
       );
       setEmployees(employeesWithAttendance);
     }
-    setDataLoading(false);
+    setDataLoading(false); // End data loading
   };
 
   const getAttendancePercentage = (monthlyAttendance: number) => {
@@ -171,7 +178,7 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
     }
   };
 
-  if (authLoading || dataLoading) {
+  if (authLoading || dataLoading) { // Show loading if authentication or data is still loading
     return <div className="text-center py-4">Loading employees...</div>;
   }
 
@@ -233,6 +240,7 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
                   >
                     {isCheckedInToday(employee.todayAttendance) ? 'Checked In' : 'Not Checked In'}
                   </Badge>
+                  {/* Display role badge for any role other than 'employee' (or for all if desired) */}
                   {employee.role && employee.role !== 'employee' && (
                      <Badge variant="outline" className="bg-gray-100 text-gray-800">
                         {employee.role.charAt(0).toUpperCase() + employee.role.slice(1)}
@@ -242,6 +250,8 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
               </div>
             </div>
 
+            {/* Only show Assign Task button if showAssignTask is true AND the user is an admin or leader
+                AND the employee in the list is actually an 'employee' role (as per the task assignment logic) */}
             {showAssignTask && user && (user.role === 'admin' || user.role === 'leader') && employee.role === 'employee' && (
               <Button
                 variant="outline"

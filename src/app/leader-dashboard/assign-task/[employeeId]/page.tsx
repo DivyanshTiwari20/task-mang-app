@@ -2,37 +2,36 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-// import { createClient } from '@/lib/supabase';
+import { useRouter, usePathname } from 'next/navigation'; // Import usePathname
+import { supabase } from '@/lib/supabase'; // Corrected: Changed from 'createClient' to 'supabase'
 import { useAuth } from '@/lib/auth'; // To get current leader's department
 // Assuming you have these UI components from shadcn/ui or similar
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar'; // Or your date picker component
-import { ChevronLeft } from 'lucide-react'; // For the back button icon
+import { Calendar } from '@/components/ui/calendar';
+import { ChevronLeft } from 'lucide-react';
 
 // Define the priority levels
 type Priority = 'high' | 'medium' | 'low' | 'critical';
 
-interface AssignTaskPageProps {
-  params: {
-    employeeId: string;
-  };
-}
-
-export default function LeaderAssignTaskPage({ params }: AssignTaskPageProps) {
+// Remove AssignTaskPageProps interface
+export default function LeaderAssignTaskPage() {
   const router = useRouter();
-  const supabase = createClient();
+  const pathname = usePathname(); // Get the current pathname
+  // Extract employeeId from the pathname
+  const pathSegments = pathname.split('/');
+  const employeeId = pathSegments[pathSegments.length - 1]; // Assumes employeeId is the last segment
+
   const { user } = useAuth(); // Get current user (leader) info
-  const { employeeId } = params;
+  // Removed: const { employeeId } = params; as it's extracted from pathname now
 
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDescription, setDescription] = useState('');
-  const [priority, setPriority] = useState<Priority>('medium'); // Default to medium
-  const [dueDate, setDueDate] = useState<Date | undefined>(undefined); // Calendar expects Date object
-  const [assigneeName, setAssigneeName] = useState('Employee'); // To display the employee's name
+  const [priority, setPriority] = useState<Priority>('medium');
+  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [assigneeName, setAssigneeName] = useState('Employee');
   const [leaderDepartmentId, setLeaderDepartmentId] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
@@ -43,6 +42,10 @@ export default function LeaderAssignTaskPage({ params }: AssignTaskPageProps) {
     // Get leader's department from auth context
     if (user && user.role === 'leader' && user.department_id) {
       setLeaderDepartmentId(user.department_id);
+    } else if (!user) {
+      setError('User not authenticated.');
+      setLoading(false);
+      return;
     } else {
       setError('You are not authorized as a leader or your department is not set.');
       setLoading(false);
@@ -51,9 +54,15 @@ export default function LeaderAssignTaskPage({ params }: AssignTaskPageProps) {
 
     // Fetch employee details to display their name and confirm they are in the leader's department
     const fetchEmployeeDetails = async () => {
+      if (!employeeId || employeeId === '[employeeId]') { // Add check for default dynamic route value
+        setError('Employee ID not found in URL.');
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       const { data: employee, error: employeeError } = await supabase
-        .from('profiles')
+        .from('users')
         .select('full_name, department_id, role')
         .eq('id', employeeId)
         .single();
@@ -62,27 +71,26 @@ export default function LeaderAssignTaskPage({ params }: AssignTaskPageProps) {
         console.error('Error fetching employee details:', employeeError?.message);
         setError('Failed to load employee details. Please go back.');
       } else if (employee.department_id !== leaderDepartmentId || employee.role !== 'employee') {
-          // Additional check for leaders: Ensure assigned employee is in leader's department and is an employee
           setError('You can only assign tasks to employees within your department.');
-          router.back(); // Redirect back if unauthorized
+          router.back();
       } else {
         setAssigneeName(employee.full_name || 'Unknown Employee');
       }
       setLoading(false);
     };
 
-    if (employeeId && leaderDepartmentId) { // Only fetch if employeeId and leader's department are known
+    // Only fetch employee details if employeeId and leaderDepartmentId are available
+    if (employeeId && leaderDepartmentId) {
       fetchEmployeeDetails();
     }
-  }, [employeeId, supabase, user, leaderDepartmentId, router]); // Add router to dependency array
-
+  }, [employeeId, supabase, user, leaderDepartmentId, router, pathname]); // Added pathname to dependencies
 
   const handleAssignTask = async () => {
     setMessage('');
     setError('');
 
-    if (!taskTitle || !taskDescription || !dueDate || !leaderDepartmentId) {
-      setError('Please fill in all required fields (Task Title, Description, Due Date) and ensure your department is loaded.');
+    if (!taskTitle || !taskDescription || !dueDate || !leaderDepartmentId || !employeeId || employeeId === '[employeeId]') {
+      setError('Please fill in all required fields (Task Title, Description, Due Date), ensure your department is loaded, and employee ID is valid.');
       return;
     }
 
@@ -95,9 +103,9 @@ export default function LeaderAssignTaskPage({ params }: AssignTaskPageProps) {
           title: taskTitle,
           description: taskDescription,
           assignee_id: employeeId,
-          department_id: leaderDepartmentId, // Auto-set to the leader's department
-          due_date: dueDate.toISOString().split('T')[0], // Format to YYYY-MM-DD
-          priority: priority, // Include priority
+          department_id: leaderDepartmentId,
+          due_date: dueDate.toISOString().split('T')[0],
+          priority: priority,
         }),
       });
 
@@ -108,12 +116,11 @@ export default function LeaderAssignTaskPage({ params }: AssignTaskPageProps) {
       }
 
       setMessage(data.message);
-      // Optionally clear the form or redirect
       setTaskTitle('');
       setDescription('');
       setPriority('medium');
       setDueDate(undefined);
-      // router.push('/leader-dashboard'); // Example redirect
+      // router.push('/leader-dashboard');
     } catch (err: any) {
       setError(err.message);
       console.error('Error assigning task:', err);
@@ -191,7 +198,7 @@ export default function LeaderAssignTaskPage({ params }: AssignTaskPageProps) {
               selected={dueDate}
               onSelect={setDueDate}
               initialFocus
-              className="rounded-md border p-2 mt-1 mx-auto" // Center the calendar
+              className="rounded-md border p-2 mt-1 mx-auto"
             />
           </div>
 
@@ -212,4 +219,3 @@ export default function LeaderAssignTaskPage({ params }: AssignTaskPageProps) {
     </div>
   );
 }
-    
