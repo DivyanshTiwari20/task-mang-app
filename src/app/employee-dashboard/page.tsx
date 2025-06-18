@@ -7,34 +7,68 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 
+interface Task {
+  id: number
+  title: string
+  description: string
+  due_date: string
+  priority: string
+}
+
 export default function EmployeeDashboard() {
   const { user } = useAuth()
   const [monthlyAttendance, setMonthlyAttendance] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [loadingAttendance, setLoadingAttendance] = useState(true)
+
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [loadingTasks, setLoadingTasks] = useState(true)
 
   useEffect(() => {
     if (user) {
       fetchMonthlyAttendance()
+      fetchTasks()
     }
   }, [user])
 
   const fetchMonthlyAttendance = async () => {
     if (!user) return
 
+    setLoadingAttendance(true)
     const currentMonth = new Date().getMonth() + 1
     const currentYear = new Date().getFullYear()
-    
+    const startDate = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`
+
     const { data, error } = await supabase
       .from('attendance')
       .select('*')
       .eq('user_id', user.id)
-      .gte('date', `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`)
+      .gte('date', startDate)
       .not('check_in', 'is', null)
 
     if (data) {
       setMonthlyAttendance(data.length)
+    } else {
+      console.error('Error fetching attendance:', error)
     }
-    setLoading(false)
+    setLoadingAttendance(false)
+  }
+
+  const fetchTasks = async () => {
+    if (!user) return
+
+    setLoadingTasks(true)
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('id, title, description, due_date, priority')
+      .eq('assignee_id', user.id)
+      .order('due_date', { ascending: true })
+
+    if (data) {
+      setTasks(data)
+    } else {
+      console.error('Error fetching tasks:', error)
+    }
+    setLoadingTasks(false)
   }
 
   if (!user) return null
@@ -42,7 +76,6 @@ export default function EmployeeDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      
       <div className="max-w-6xl mx-auto p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
@@ -63,16 +96,11 @@ export default function EmployeeDashboard() {
             <CardContent>
               <div className="text-center">
                 <div className="text-3xl font-bold text-blue-600 mb-2">
-                  {loading ? '...' : monthlyAttendance}
+                  {loadingAttendance ? '...' : monthlyAttendance}
                 </div>
-                <div className="text-sm text-gray-600">
-                  Current Month Attendance
-                </div>
+                <div className="text-sm text-gray-600">Current Month Attendance</div>
                 <div className="text-xs text-gray-500 mt-1">
-                  {new Date().toLocaleDateString('en-US', { 
-                    month: 'long', 
-                    year: 'numeric' 
-                  })}
+                  {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                 </div>
               </div>
             </CardContent>
@@ -96,17 +124,31 @@ export default function EmployeeDashboard() {
           </Card>
         </div>
 
-        {/* Placeholder for future task section */}
+        {/* Tasks Section */}
         <div className="mt-8">
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">My Tasks</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8 text-gray-500">
-                <p>Task management will be available soon!</p>
-                <p className="text-sm mt-2">Focus on attendance tracking for now.</p>
-              </div>
+              {loadingTasks ? (
+                <p>Loading tasks...</p>
+              ) : tasks.length > 0 ? (
+                <ul className="space-y-4">
+                  {tasks.map(task => (
+                    <li key={task.id} className="p-4 border rounded-lg">
+                      <h3 className="font-medium text-gray-900">{task.title}</h3>
+                      <p className="text-sm text-gray-700">{task.description}</p>
+                      <div className="mt-2 text-xs text-gray-500 flex justify-between">
+                        <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
+                        <span className="capitalize">{task.priority}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-center text-gray-500">No tasks assigned.</p>
+              )}
             </CardContent>
           </Card>
         </div>
