@@ -77,7 +77,7 @@ export default function AdminAssignTaskPage() {
     if (employeeId) {
       fetchEmployeeDetails();
     }
-  }, [employeeId, supabase]);
+  }, [employeeId]);
 
   const handleAssignTask = async () => {
     setMessage('');
@@ -127,12 +127,15 @@ export default function AdminAssignTaskPage() {
       setTaskDescription('');
       setPriority('medium');
       setDueDate(undefined);
-    } catch (err: any) {
-      setError(err.message);
-      console.error('Error assigning task:', err);
-    } finally {
-      setLoading(false);
-    }
+  } catch (err: unknown) { // Change any to unknown
+  if (err instanceof Error) { // Add type guard
+    setError(err.message);
+    console.error('Error assigning task:', err);
+  } else {
+    setError('An unknown error occurred.'); // Generic fallback for non-Error objects
+    console.error('An unknown error occurred:', err);
+  }
+}
   };
 
   return (
