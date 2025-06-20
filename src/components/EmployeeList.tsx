@@ -28,6 +28,12 @@ interface EmployeeWithAttendance extends CustomUser {
     id: string;
     name: string;
   }
+  full_name?:{
+    name:string;
+  }
+  username?:{
+    name:string;
+  }
 }
 
 export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
@@ -84,9 +90,8 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
 
     // Conditional filtering based on the logged-in user's role
     if (user.role === 'admin') {
-      // Admins can see all users (no additional role filter here)
-      // If you specifically wanted to exclude 'admin' from the list itself, you could add:
-      // query = query.not('role', 'eq', 'admin');
+      // Admins can see all users except other admins
+      query = query.not('role', 'eq', 'admin');
     } else if (user.role === 'leader') {
       // Leaders can only see employees within their own department
       query = query
@@ -178,6 +183,23 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
     }
   };
 
+  // Helper function to determine if the assign task button should be shown
+  const shouldShowAssignTaskButton = (employee: EmployeeWithAttendance) => {
+    if (!showAssignTask || !user) return false;
+    
+    // Admin can assign tasks to both employees and leaders
+    if (user.role === 'admin') {
+      return employee.role === 'employee' || employee.role === 'leader';
+    }
+    
+    // Leaders can only assign tasks to employees
+    if (user.role === 'leader') {
+      return employee.role === 'employee';
+    }
+    
+    return false;
+  };
+
   if (authLoading || dataLoading) { // Show loading if authentication or data is still loading
     return <div className="text-center py-4">Loading employees...</div>;
   }
@@ -189,7 +211,6 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
     // Return a minimal placeholder to prevent mismatches
     return <div className="text-center py-4">Loading...</div>;
   }
-
 
   return (
     <div className="space-y-4">
@@ -250,9 +271,8 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
               </div>
             </div>
 
-            {/* Only show Assign Task button if showAssignTask is true AND the user is an admin or leader
-                AND the employee in the list is actually an 'employee' role (as per the task assignment logic) */}
-            {showAssignTask && user && (user.role === 'admin' || user.role === 'leader') && employee.role === 'employee' && (
+            {/* Show Assign Task button based on user permissions and employee role */}
+            {shouldShowAssignTaskButton(employee) && (
               <Button
                 variant="outline"
                 size="sm"

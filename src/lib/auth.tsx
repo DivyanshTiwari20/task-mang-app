@@ -11,7 +11,7 @@ interface CustomUser {
   role: 'admin' | 'leader' | 'employee';
   department_id: number | null;
 }
-
+  
 interface AuthContextType {
   user: CustomUser | null;
   login: (username: string, password: string) => Promise<{ success: boolean; error: string | null }>;

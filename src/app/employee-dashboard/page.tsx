@@ -114,7 +114,7 @@ export default function EmployeeDashboard() {
             <CardContent>
               <div className="text-center">
                 <div className="text-lg font-semibold text-gray-800 mb-1">
-                  {user.department?.name || 'N/A'}
+                  {user.department_id?.number || 'N/A'}
                 </div>
                 <div className="text-sm text-gray-600">
                   Role: {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
