@@ -30,7 +30,7 @@ export function AttendanceCard() {
     if (!user) return
 
     const today = new Date().toISOString().split('T')[0]
-    
+
     const { data } = await supabase
       .from('attendance')
       .select('check_in, check_out')
@@ -43,10 +43,27 @@ export function AttendanceCard() {
     }
   }
 
+  const isWithinCheckInTime = () => {
+    const now = new Date()
+    const start = new Date()
+    const end = new Date()
+    start.setHours(10, 0, 0, 0)
+    end.setHours(10, 15, 0, 0)
+    return now >= start && now <= end
+  }
+
+  const isAfter6PM = () => {
+    const now = new Date()
+    const sixPM = new Date()
+    sixPM.setHours(18, 0, 0, 0)
+    return now >= sixPM
+  }
+
   const handleCheckIn = async () => {
     if (!user) return
-    setLoading(true)
+    if (!isWithinCheckInTime()) return
 
+    setLoading(true)
     const now = new Date().toISOString()
     const today = new Date().toISOString().split('T')[0]
 
@@ -61,14 +78,14 @@ export function AttendanceCard() {
     if (!error) {
       setTodayAttendance(prev => ({ ...prev, check_in: now }))
     }
-
     setLoading(false)
   }
 
   const handleCheckOut = async () => {
     if (!user) return
-    setLoading(true)
+    if (!isAfter6PM()) return
 
+    setLoading(true)
     const now = new Date().toISOString()
     const today = new Date().toISOString().split('T')[0]
 
@@ -81,7 +98,6 @@ export function AttendanceCard() {
     if (!error) {
       setTodayAttendance(prev => ({ ...prev, check_out: now }))
     }
-
     setLoading(false)
   }
 
@@ -100,7 +116,7 @@ export function AttendanceCard() {
             {formatTime(todayAttendance.check_in)}
           </span>
         </div>
-        
+
         <div className="flex justify-between items-center">
           <span className="text-sm text-gray-600">Check Out:</span>
           <span className="font-medium">
@@ -109,27 +125,27 @@ export function AttendanceCard() {
         </div>
 
         <div className="pt-2 space-y-2">
-          {!isCheckedIn && (
+          {!isCheckedIn && isWithinCheckInTime() && (
             <Button 
-              onClick={handleCheckIn}
-              disabled={loading}
-              className="w-full bg-green-600 hover:bg-green-700"
+            onClick={handleCheckIn}
+            disabled={loading}
+            className="w-full bg-green-600 hover:bg-green-700"
             >
               {loading ? 'Checking In...' : 'Check In'}
             </Button>
           )}
-          
-          {isCheckedIn && !isCheckedOut && (
+
+          {isCheckedIn && !isCheckedOut && isAfter6PM() && (
             <Button 
-              onClick={handleCheckOut}
-              disabled={loading}
-              variant="outline"
-              className="w-full border-red-300 text-red-600 hover:bg-red-50"
+            onClick={handleCheckOut}
+            disabled={loading}
+            variant="outline"
+            className="w-full border-red-300 text-red-600 hover:bg-red-50"
             >
               {loading ? 'Checking Out...' : 'Check Out'}
             </Button>
           )}
-          
+
           {isCheckedIn && isCheckedOut && (
             <div className="text-center text-sm text-green-600 font-medium">
               ✓ Attendance marked for today

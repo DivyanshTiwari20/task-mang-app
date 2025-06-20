@@ -48,6 +48,6 @@ export function generateToken(user: AuthenticatedUser): string {
       department_id: user.department_id,
     },
     process.env.JWT_SECRET || 'your-secret-key',
-    { expiresIn: '24h' }
+    { expiresIn: '15d' }
   );
 }
