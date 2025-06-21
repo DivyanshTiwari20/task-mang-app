@@ -58,7 +58,7 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-600">Manage your team&apos;s attendance and tasks</p>
+          {/* <p className="text-gray-600">Manage your team&apos;s attendance and tasks</p> */}
         </div>
 
         {/* Stats Cards */}

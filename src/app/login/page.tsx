@@ -64,7 +64,7 @@ export default function LoginPage() {
             <div className="w-3 h-3 bg-black rounded-sm"></div>
             <CardTitle className="text-2xl font-bold">Askus</CardTitle>
           </div>
-          <p className="text-gray-600">Sign in to your account</p>
+          <p className="text-gray-600">Login to your account</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -96,7 +96,7 @@ export default function LoginPage() {
               className="w-full bg-blue-600 hover:bg-blue-700"
               disabled={formLoading || authLoading} // Disable if form is submitting or auth is loading
             >
-              {formLoading ? 'Signing in...' : 'Sign In'}
+              {formLoading ? 'loging in...' : 'Login'}
             </Button>
           </form>
         </CardContent>
