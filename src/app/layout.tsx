@@ -1,16 +1,15 @@
 // src/app/layout.tsx
-import './globals.css'
-
+import './globals.css'               // ← only here!
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import './globals.css'
 import { AuthProvider } from '@/lib/auth'
+import ConditionalLayout from '@/components/ConditionalLayout'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Askus - Task Management',
-  description: 'Simple task management system',
+  title: 'My Task App',
+  description: 'Manage your tasks efficiently',
 }
 
 export default function RootLayout({
@@ -22,7 +21,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <AuthProvider>
-          {children}
+          <ConditionalLayout>
+            {children}
+          </ConditionalLayout>
         </AuthProvider>
       </body>
     </html>
