@@ -26,13 +26,13 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
+          {/* <Button variant="ghost" size="icon" className="relative"> */}
+            {/* <Bell className="h-5 w-5" /> */}
             {/* Notification badge - for future task notifications */}
             {/* <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-              3
+              3 
             </span> */}
-          </Button>
+          {/* </Button> */}
 
           <div className="flex items-center space-x-3">
             <Avatar className="h-8 w-8">
@@ -40,7 +40,7 @@ export function Navbar() {
                 {user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <span className="text-sm text-gray-700">{user.full_name}</span>
+            {/* <span className="text-sm text-gray-700">{user.full_name}</span> */}
           </div>
 
           <Button variant="ghost" size="icon" onClick={handleLogout}>

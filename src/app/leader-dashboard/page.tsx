@@ -1,7 +1,6 @@
 // src/app/leader-dashboard/page.tsx
 'use client'
 import { useState, useEffect } from 'react'
-import { Navbar } from '@/components/Navbar'
 import { EmployeeList } from '@/components/EmployeeList'
 import { AttendanceCard } from '@/components/AttendanceCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -75,7 +74,6 @@ export default function LeaderDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
       
       <div className="max-w-7xl mx-auto p-6">
         <div className="mb-6">

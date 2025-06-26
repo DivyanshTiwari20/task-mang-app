@@ -1,7 +1,6 @@
 // src/app/employee-dashboard/page.tsx
 'use client'
 import { useState, useEffect } from 'react'
-import { Navbar } from '@/components/Navbar'
 import { AttendanceCard } from '@/components/AttendanceCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase'
@@ -75,7 +74,7 @@ export default function EmployeeDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+
       <div className="max-w-6xl mx-auto p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
@@ -114,7 +113,7 @@ export default function EmployeeDashboard() {
             <CardContent>
               <div className="text-center">
                 <div className="text-lg font-semibold text-gray-800 mb-1">
-                  {user.department_id?.number || 'N/A'}
+                  {/* {user.department_id?.number || 'N/A'} */}
                 </div>
                 <div className="text-sm text-gray-600">
                   Role: {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
