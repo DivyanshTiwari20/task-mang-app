@@ -1,11 +1,11 @@
 // src/app/admin-dashboard/page.tsx
 'use client'
 import { useState, useEffect } from 'react'
-import { Navbar } from '@/components/Navbar'
 import { EmployeeList } from '@/components/EmployeeList'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
+import { AdminCards } from '@/components/cards/AdminCards'
 
 export default function AdminDashboard() {
   const { user } = useAuth()
@@ -62,56 +62,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                Quick Attendance Overview
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-900">
-                {loading ? '...' : `${todayCheckedIn}/${totalEmployees}`}
-              </div>
-              <div className="text-xs text-gray-500 mt-1">
-                Checked In Today
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                Total Employees
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-900">
-                {loading ? '...' : totalEmployees}
-              </div>
-              <div className="text-xs text-gray-500 mt-1">
-                Active Team Members
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                Attendance Rate
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-900">
-                {loading ? '...' : totalEmployees > 0 ? `${Math.round((todayCheckedIn / totalEmployees) * 100)}%` : '0%'}
-              </div>
-              <div className="text-xs text-gray-500 mt-1">
-                Today&apos;s Rate
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
+        <AdminCards/>
         {/* Employee List */}
         <Card>
           <CardHeader>

@@ -27,7 +27,7 @@ const navLinks = [
   { href: '/pages/employeeList', label: 'Employee List', icon: Users, roles: ['admin', 'leader'] },
   { href: '/leave-approval', label: 'Leave Approval', icon: ClipboardCheck, roles: ['admin'] },
   { href: '/finance', label: 'Finance', icon: Wallet, roles: ['admin'] },
-  { href: '/task', label: 'Task', icon: Briefcase, roles: ['admin', 'leader', 'employee'] },
+  { href: '/pages/tasks', label: 'Task', icon: Briefcase, roles: [ 'leader', 'employee'] },
 ]
 
 const settingsLinks = [
@@ -87,19 +87,19 @@ export default function Sidebar() {
   return (
     <aside
       className={`
-        max-h-screen sticky top-0 overflow-y-auto flex flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700
+        max-h-screen sticky top-0 overflow-y-auto flex flex-col bg-white  border-gray-200
         transition-all duration-300 ease-in-out ${isExpanded ? 'w-64' : 'w-20'}
       `}
     >
       {/* Collapse Button */}
-      <div className="p-4 pb-2 flex justify-end">
+      {/* <div className="p-4 pb-2 flex justify-end">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600"
         >
           {isExpanded ? <ChevronLeft /> : <ChevronRight />}
         </button>
-      </div>
+      </div> */}
 
       {/* Navigation Links */}
       <nav className="flex-1 px-2 mt-2">
@@ -109,13 +109,13 @@ export default function Sidebar() {
       </nav>
 
       {/* Settings & Logout */}
-      <div className="border-t border-gray-200 dark:border-gray-700 p-3">
+      <div className="border-t border-gray-200">
         {filteredSettingsLinks.map(link => (
           <SidebarItem key={link.href} {...link} isExpanded={isExpanded} />
         ))}
         <button
           onClick={handleLogout}
-          className="w-full text-left flex items-center p-3 my-1 rounded-lg hover:bg-red-100 dark:hover:bg-red-700 text-red-600 dark:text-red-300 transition-colors"
+          className="w-full text-left flex items-center p-3 my-1 rounded-lg hover:bg-red-100 text-red-600 "
         >
           <ClipboardCheck className="w-6 h-6 rotate-180" />
           <span className={`overflow-hidden transition-all ${isExpanded ? 'w-40 ml-3' : 'w-0'}`}>Logout</span>

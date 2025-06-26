@@ -1,11 +1,9 @@
-// app/leader-dashboard/assign-task/[employeeId]/page.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation'; // Import usePathname
-import { supabase } from '@/lib/supabase'; // Corrected: Changed from 'createClient' to 'supabase'
-import { useAuth } from '@/lib/auth'; // To get current leader's department
-// Assuming you have these UI components from shadcn/ui or similar
+import { useRouter, usePathname } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/auth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,19 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { ChevronLeft } from 'lucide-react';
 
-// Define the priority levels
 type Priority = 'high' | 'medium' | 'low' | 'critical';
 
-// Remove AssignTaskPageProps interface
 export default function LeaderAssignTaskPage() {
   const router = useRouter();
-  const pathname = usePathname(); // Get the current pathname
-  // Extract employeeId from the pathname
+  const pathname = usePathname();
   const pathSegments = pathname.split('/');
-  const employeeId = pathSegments[pathSegments.length - 1]; // Assumes employeeId is the last segment
-
-  const { user } = useAuth(); // Get current user (leader) info
-  // Removed: const { employeeId } = params; as it's extracted from pathname now
+  const employeeId = pathSegments[pathSegments.length - 1];
+  const { user } = useAuth();
 
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDescription, setDescription] = useState('');
@@ -33,30 +26,24 @@ export default function LeaderAssignTaskPage() {
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [assigneeName, setAssigneeName] = useState('Employee');
   const [leaderDepartmentId, setLeaderDepartmentId] = useState<string | null>(null);
-
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // Get leader's department from auth context
     if (user && user.role === 'leader' && user.department_id) {
       setLeaderDepartmentId(user.department_id);
     } else if (!user) {
       setError('User not authenticated.');
-      setLoading(false);
       return;
     } else {
       setError('You are not authorized as a leader or your department is not set.');
-      setLoading(false);
       return;
     }
 
-    // Fetch employee details to display their name and confirm they are in the leader's department
     const fetchEmployeeDetails = async () => {
-      if (!employeeId || employeeId === '[employeeId]') { // Add check for default dynamic route value
+      if (!employeeId || employeeId === '[employeeId]') {
         setError('Employee ID not found in URL.');
-        setLoading(false);
         return;
       }
 
@@ -71,19 +58,18 @@ export default function LeaderAssignTaskPage() {
         console.error('Error fetching employee details:', employeeError?.message);
         setError('Failed to load employee details. Please go back.');
       } else if (employee.department_id !== leaderDepartmentId || employee.role !== 'employee') {
-          setError('You can only assign tasks to employees within your department.');
-          router.back();
+        setError('You can only assign tasks to employees within your department.');
+        router.back();
       } else {
         setAssigneeName(employee.full_name || 'Unknown Employee');
       }
       setLoading(false);
     };
 
-    // Only fetch employee details if employeeId and leaderDepartmentId are available
     if (employeeId && leaderDepartmentId) {
       fetchEmployeeDetails();
     }
-  }, [employeeId, supabase, user, leaderDepartmentId, router, pathname]); // Added pathname to dependencies
+  }, [employeeId, user, leaderDepartmentId, router]);
 
   const handleAssignTask = async () => {
     setMessage('');
@@ -103,6 +89,7 @@ export default function LeaderAssignTaskPage() {
           title: taskTitle,
           description: taskDescription,
           assignee_id: employeeId,
+          assigned_by_id: user?.id, // Fixed: Added missing assigned_by_id
           department_id: leaderDepartmentId,
           due_date: dueDate.toISOString().split('T')[0],
           priority: priority,
@@ -120,7 +107,6 @@ export default function LeaderAssignTaskPage() {
       setDescription('');
       setPriority('medium');
       setDueDate(undefined);
-      // router.push('/leader-dashboard');
     } catch (err: any) {
       setError(err.message);
       console.error('Error assigning task:', err);
@@ -137,12 +123,8 @@ export default function LeaderAssignTaskPage() {
             <ChevronLeft className="h-6 w-6" />
           </Button>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              Assign Task
-            </h2>
-            <p className="mt-1 text-sm text-gray-600">
-              To: {assigneeName} (Your Department)
-            </p>
+            <h2 className="text-2xl font-bold text-gray-900">Assign Task</h2>
+            <p className="mt-1 text-sm text-gray-600">To: {assigneeName} (Your Department)</p>
           </div>
         </div>
 
@@ -158,7 +140,7 @@ export default function LeaderAssignTaskPage() {
               value={taskTitle}
               onChange={(e) => setTaskTitle(e.target.value)}
               placeholder="Enter task title"
-              className="mt-1 appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="mt-1"
             />
           </div>
 
@@ -172,14 +154,14 @@ export default function LeaderAssignTaskPage() {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Enter task description"
               rows={4}
-              className="mt-1 appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="mt-1"
             />
           </div>
 
           <div>
             <label htmlFor="priority" className="block text-sm font-medium text-gray-700">Priority</label>
             <Select onValueChange={(value: Priority) => setPriority(value)} value={priority}>
-              <SelectTrigger className="mt-1 w-full rounded-md border border-gray-300 shadow-sm px-3 py-2 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+              <SelectTrigger className="mt-1">
                 <SelectValue placeholder="Select Priority" />
               </SelectTrigger>
               <SelectContent>
@@ -208,7 +190,7 @@ export default function LeaderAssignTaskPage() {
           <div>
             <Button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="w-full"
               disabled={loading}
             >
               {loading ? 'Sending...' : 'Send Task'}
