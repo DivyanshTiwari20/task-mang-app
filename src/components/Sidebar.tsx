@@ -31,7 +31,7 @@ const navLinks = [
 ]
 
 const settingsLinks = [
-  { href: '/settings', label: 'Settings', icon: Settings, roles: ['admin', 'leader'] },
+  { href: '/pages/settings', label: 'Settings', icon: Settings, roles: ['admin', 'leader','employee'] },
 ]
 
 // ======================================================================================
