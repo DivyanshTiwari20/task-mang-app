@@ -84,7 +84,7 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
       const currentYear = today.getFullYear();
 
       const employeesWithAttendance = await Promise.all(
-        usersData.map(async (emp) => {
+        usersData.map(async (emp  ) => {
           const { data: todayData, error: todayError } = await supabase
             .from('attendance')
             .select('check_in, check_out')
@@ -240,6 +240,7 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
                 variant="outline"
                 size="sm"
                 onClick={() => handleAssignTaskClick(employee.id)}
+                className='bg-gray-100'
               >
                 Assign Task
               </Button>

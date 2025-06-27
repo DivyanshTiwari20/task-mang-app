@@ -2,7 +2,6 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { EmployeeList } from '@/components/EmployeeList'
-import { AttendanceCard } from '@/components/AttendanceCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
