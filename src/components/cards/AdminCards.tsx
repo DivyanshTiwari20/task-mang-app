@@ -39,7 +39,7 @@ export const AdminCards = () => {
   return (
     <>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
+          <Card className='bg-purple-200'>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
                 Quick Attendance Overview
@@ -55,7 +55,7 @@ export const AdminCards = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className='bg-amber-200'>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
                 Total Employees
@@ -71,7 +71,7 @@ export const AdminCards = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className='bg-purple-200'>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600">
                 Attendance Rate

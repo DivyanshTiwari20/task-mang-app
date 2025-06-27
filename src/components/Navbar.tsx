@@ -10,10 +10,7 @@ export function Navbar() {
   const { user, logout } = useAuth()
   const router = useRouter()
 
-  const handleLogout = () => {
-    logout()
-    router.push('/login')
-  }
+  
 
   if (!user) return null
 
@@ -43,9 +40,6 @@ export function Navbar() {
             {/* <span className="text-sm text-gray-700">{user.full_name}</span> */}
           </div>
 
-          <Button variant="ghost" size="icon" onClick={handleLogout}>
-            <LogOut className="h-5 w-5" />
-          </Button>
         </div>
       </div>
     </nav>

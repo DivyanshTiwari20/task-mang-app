@@ -6,6 +6,7 @@ import { AttendanceCard } from '@/components/AttendanceCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
+import { LeaderCards } from '@/components/cards/LeaderCards'
 
 export default function LeaderDashboard() {
   const { user } = useAuth()
@@ -80,63 +81,8 @@ export default function LeaderDashboard() {
           <h1 className="text-2xl font-bold text-gray-900">Leader Dashboard</h1>
           <p className="text-gray-600">Manage your {user.department?.name} team</p>
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-          {/* Leader's Attendance Card */}
-          <div className="lg:col-span-1">
-            <AttendanceCard />
-          </div>
-
-          {/* Department Stats */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                Team Attendance Today
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-900">
-                {loading ? '...' : `${departmentStats.todayCheckedIn}/${departmentStats.totalTeamMembers}`}
-              </div>
-              <div className="text-xs text-gray-500 mt-1">
-                Team Members Checked In
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                My Monthly Attendance
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {loading ? '...' : departmentStats.myMonthlyAttendance}
-              </div>
-              <div className="text-xs text-gray-500 mt-1">
-                Days This Month
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                Team Size
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-900">
-                {loading ? '...' : departmentStats.totalTeamMembers}
-              </div>
-              <div className="text-xs text-gray-500 mt-1">
-                {user.department?.name} Members
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
+<LeaderCards/>
+        
         {/* Team Members List */}
         <Card>
           <CardHeader>

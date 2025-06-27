@@ -105,7 +105,7 @@ export function AttendanceCard() {
   const isCheckedOut = !!todayAttendance.check_out
 
   return (
-    <Card>
+    <Card className='bg-purple-200'>
       <CardHeader>
         <CardTitle className="text-lg">Today&apos;s Attendance</CardTitle>
       </CardHeader>
