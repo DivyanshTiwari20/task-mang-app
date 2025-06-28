@@ -203,7 +203,7 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
   return (
     <div className="space-y-4">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search employees"
           value={searchTerm}
@@ -214,18 +214,18 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
 
       <div className="space-y-3">
         {filteredEmployees.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-muted-foreground">
             No employees found or you do not have permission to view this list.
           </div>
         )}
         {filteredEmployees.map((employee) => (
           <div
             key={employee.id}
-            className="flex items-center justify-between p-4 bg-white rounded-lg border"
+            className="flex items-center justify-between p-4 bg-card rounded-lg border border-border"
           >
             <div className="flex items-center space-x-3">
               <Avatar className="h-10 w-10">
-                <AvatarFallback className="bg-blue-100 text-red -600">
+                <AvatarFallback className="bg-primary/10 text-primary">
                   {/* {employee.full_name?.split(' ').map(n => n[0]).join('').toUpperCase()} */}
                   <img
                       src={profile.profile_image || getDefaultAvatar(profile.gender)}
@@ -236,10 +236,10 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
               </Avatar>
 
               <div>
-                <div className="font-medium text-gray-900">
+                <div className="font-medium text-card-foreground">
                   {employee.full_name}
                 </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <span>{employee.department?.name}</span>
                   <span>•</span>
                   <span>{getAttendancePercentage(employee.monthlyAttendance || 0)}% attendance</span>
@@ -247,12 +247,12 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
                 <div className="flex items-center space-x-2 mt-1">
                   <Badge
                     variant={isCheckedInToday(employee.todayAttendance) ? "default" : "secondary"}
-                    className={isCheckedInToday(employee.todayAttendance) ? "bg-green-100 text-green-800" : ""}
+                    className={isCheckedInToday(employee.todayAttendance) ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400" : ""}
                   >
                     {isCheckedInToday(employee.todayAttendance) ? 'Checked In' : 'Not Checked In'}
                   </Badge>
                   {employee.role && employee.role !== 'employee' && (
-                     <Badge variant="outline" className="bg-gray-100 text-gray-800">
+                     <Badge variant="outline" className="bg-muted text-muted-foreground">
                         {employee.role.charAt(0).toUpperCase() + employee.role.slice(1)}
                      </Badge>
                   )}
@@ -265,7 +265,7 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
                 variant="outline"
                 size="sm"
                 onClick={() => handleAssignTaskClick(employee.id)}
-                className='bg-gray-100'
+                className='bg-muted hover:bg-muted/80'
               >
                 Assign Task
               </Button>

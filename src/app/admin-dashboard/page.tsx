@@ -44,21 +44,21 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
-          <p className="text-gray-600 mt-2">You don&apos;t have permission to view this page.</p>
+          <h1 className="text-2xl font-bold text-destructive">Access Denied</h1>
+          <p className="text-muted-foreground mt-2">You don&apos;t have permission to view this page.</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
      
       
       <div className="max-w-7xl mx-auto p-6">
         <div className="mb-6">
-          {/* <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1> */}
-          {/* <p className="text-gray-600">Manage your team&apos;s attendance and tasks</p> */}
+          {/* <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1> */}
+          {/* <p className="text-muted-foreground">Manage your team&apos;s attendance and tasks</p> */}
         </div>
 
         {/* Stats Cards */}

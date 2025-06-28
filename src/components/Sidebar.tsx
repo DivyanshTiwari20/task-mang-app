@@ -29,9 +29,10 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar"
 import { ModeToggle } from './ModeToggle'
+import Image from 'next/image'
 
 const navLinks = [
-  { href: '/admin-dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
+  { href: '/admin-dashboard', label: 'Home', icon: LayoutDashboard, roles: ['admin'] },
   { href: '/leader-dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['leader'] },
   { href: '/employee-dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['employee'] },
   { href: '/pages/employeeList', label: 'Employee List', icon: Users, roles: ['admin', 'leader'] },
@@ -106,7 +107,8 @@ export default function AppSidebar() {
       <SidebarContent>
         {/* Navigation Links */}
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <Image src='/logo.png' alt='hi' width={100} height={100} className='flex items-center m-1 mb-4'></Image>
+          {/* <SidebarGroupLabel>Navigation</SidebarGroupLabel> */}
           <SidebarGroupContent>
             <SidebarMenu>
               {filteredNavLinks.map(link => (

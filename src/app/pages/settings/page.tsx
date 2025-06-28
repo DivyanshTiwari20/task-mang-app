@@ -166,10 +166,10 @@ export default function EmployeeProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex items-center gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-          <span className="text-gray-600">Loading profile...</span>
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <span className="text-muted-foreground">Loading profile...</span>
         </div>
       </div>
     )
@@ -181,15 +181,15 @@ export default function EmployeeProfilePage() {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Employee Profile</h1>
-          <p className="text-foreground">Manage your personal information and profile settings</p>
+          <p className="text-muted-foreground">Manage your personal information and profile settings</p>
         </div>
 
         {/* Success/Error Message */}
         {message && (
           <div className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${
             message.type === 'success' 
-              ? 'bg-green-50 text-green-800 border border-green-200' 
-              : 'bg-red-50 text-red-800 border border-red-200'
+              ? 'bg-green-50 text-green-800 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800/30' 
+              : 'bg-red-50 text-red-800 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800/30'
           }`}>
             {message.type === 'success' ? (
               <CheckCircle className="w-5 h-5" />
@@ -212,7 +212,7 @@ export default function EmployeeProfilePage() {
               </CardHeader>
               <CardContent className="text-center">
                 <div className="relative inline-block">
-                  <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden border-4 border-gray-200 mx-auto mb-4">
+                  <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden border-4 border-border mx-auto mb-4">
                     <img
                       src={profile.profile_image || getDefaultAvatar(profile.gender)}
                       alt="Profile"
@@ -220,7 +220,7 @@ export default function EmployeeProfilePage() {
                     />
                   </div>
                   
-                  <label className="absolute bottom-2 right-2 bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-full cursor-pointer transition-colors shadow-lg">
+                  <label className="absolute bottom-2 right-2 bg-primary hover:bg-primary/90 text-primary-foreground p-2 rounded-full cursor-pointer transition-colors shadow-lg">
                     <Camera className="w-4 h-4" />
                     <input
                       type="file"
@@ -233,13 +233,13 @@ export default function EmployeeProfilePage() {
                 </div>
                 
                 {uploading && (
-                  <div className="flex items-center justify-center gap-2 text-indigo-600">
+                  <div className="flex items-center justify-center gap-2 text-primary">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span className="text-sm">Uploading...</span>
                   </div>
                 )}
                 
-                <p className="text-xs text-foreground mt-2">
+                <p className="text-xs text-muted-foreground mt-2">
                   Click the camera icon to update your photo
                   <br />
                   Max size: 2MB
@@ -261,26 +261,26 @@ export default function EmployeeProfilePage() {
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Full Name *
                     </label>
                     <input
                       type="text"
                       value={profile.fullname}
                       onChange={(e) => handleInputChange('fullname', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-ring bg-background text-foreground"
                       placeholder="Enter your full name"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Gender
                     </label>
                     <select
                       value={profile.gender}
                       onChange={(e) => handleInputChange('gender', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-ring bg-background text-foreground"
                     >
                       <option value="male">Male</option>
                       <option value="female">Female</option>
@@ -290,7 +290,7 @@ export default function EmployeeProfilePage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     <Mail className="w-4 h-4 inline mr-1" />
                     Email Address
                   </label>
@@ -298,14 +298,14 @@ export default function EmployeeProfilePage() {
                     type="email"
                     value={profile.email}
                     disabled
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                    className="w-full px-3 py-2 border border-input rounded-lg bg-muted text-muted-foreground"
                     placeholder="Email cannot be changed"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Email address cannot be modified</p>
+                  <p className="text-xs text-muted-foreground mt-1">Email address cannot be modified</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     <Phone className="w-4 h-4 inline mr-1" />
                     Phone Number
                   </label>
@@ -313,13 +313,13 @@ export default function EmployeeProfilePage() {
                     type="tel"
                     value={profile.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-ring bg-background text-foreground"
                     placeholder="Enter your phone number"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     <MapPin className="w-4 h-4 inline mr-1" />
                     Address
                   </label>
@@ -327,7 +327,7 @@ export default function EmployeeProfilePage() {
                     value={profile.address}
                     onChange={(e) => handleInputChange('address', e.target.value)}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-ring bg-background text-foreground"
                     placeholder="Enter your full address"
                   />
                 </div>
@@ -340,7 +340,7 @@ export default function EmployeeProfilePage() {
                 <CardTitle className="flex items-center gap-2">
                   <Building className="w-5 h-5" />
                   Work Information
-                  <span className="text-xs bg-gray-100 text-black px-2 py-1 rounded-full ml-auto">
+                  <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full ml-auto">
                     Read Only
                   </span>
                 </CardTitle>
@@ -355,7 +355,7 @@ export default function EmployeeProfilePage() {
                       type="text"
                       value={profile.employee_id || 'Not assigned'}
                       disabled
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                      className="w-full px-3 py-2 border border-input rounded-lg bg-muted text-muted-foreground"
                     />
                   </div>
 
@@ -367,7 +367,7 @@ export default function EmployeeProfilePage() {
                       type="text"
                       value={profile.department || 'Not assigned'}
                       disabled
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                      className="w-full px-3 py-2 border border-input rounded-lg bg-muted text-muted-foreground"
                     />
                   </div>
 
@@ -379,19 +379,19 @@ export default function EmployeeProfilePage() {
                       type="text"
                       value={profile.position || 'Not assigned'}
                       disabled
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                      className="w-full px-3 py-2 border border-input rounded-lg bg-muted text-muted-foreground"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium tex-foreground mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Manager
                     </label>
                     <input
                       type="text"
                       value={profile.manager || 'Not assigned'}
                       disabled
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                      className="w-full px-3 py-2 border border-input rounded-lg bg-muted text-muted-foreground"
                     />
                   </div>
 
@@ -404,13 +404,13 @@ export default function EmployeeProfilePage() {
                       type="text"
                       value={profile.join_date ? new Date(profile.join_date).toLocaleDateString() : 'Not set'}
                       disabled
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                      className="w-full px-3 py-2 border border-input rounded-lg bg-muted text-muted-foreground"
                     />
                   </div>
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm text-blue-800 flex items-center gap-2">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 dark:bg-blue-900/20 dark:border-blue-800/30">
+                  <p className="text-sm text-blue-800 dark:text-blue-400 flex items-center gap-2">
                     <Shield className="w-4 h-4" />
                     Work information is managed by your administrator and cannot be modified from here.
                   </p>
@@ -427,8 +427,8 @@ export default function EmployeeProfilePage() {
             disabled={!hasChanges || saving}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
               hasChanges && !saving
-                ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-xl'
-                : 'bg-indigo-600 text-white-500 cursor-not-allowed'
+                ? 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl'
+                : 'bg-muted text-muted-foreground cursor-not-allowed'
             }`}
           >
             {saving ? (
