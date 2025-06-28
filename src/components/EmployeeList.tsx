@@ -36,7 +36,27 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [dataLoading, setDataLoading] = useState(true);
   const hasMounted = useRef(false);
+  // const { user } = useAuth()
+  const [profile, setProfile] = useState<EmployeeProfile>({
+    id: user?.id || '',
+    fullname: '',
+    email: user?.email || '',
+    phone: '',
+    address: '',
+    profile_image: '',
+    gender: 'male'
+  })
 
+  const getDefaultAvatar = (gender: string) => {
+    switch (gender) {
+      case 'female':
+        return '/avatars/female-default.png'
+      case 'male':
+        return '/avatars/male-default.png'
+      default:
+        return '/avatars/default-avatar.png'
+    }
+  }
   const fetchEmployees = useCallback(async () => {
     if (!user) {
       setDataLoading(false);
@@ -205,8 +225,13 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
           >
             <div className="flex items-center space-x-3">
               <Avatar className="h-10 w-10">
-                <AvatarFallback className="bg-blue-100 text-blue-600">
-                  {employee.full_name?.split(' ').map(n => n[0]).join('').toUpperCase()}
+                <AvatarFallback className="bg-blue-100 text-red -600">
+                  {/* {employee.full_name?.split(' ').map(n => n[0]).join('').toUpperCase()} */}
+                  <img
+                      src={profile.profile_image || getDefaultAvatar(profile.gender)}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
                 </AvatarFallback>
               </Avatar>
 

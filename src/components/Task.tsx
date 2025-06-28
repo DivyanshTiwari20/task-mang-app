@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react'
-import { AttendanceCard } from '@/components/AttendanceCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import { Clock, AlertCircle, CheckCircle2, Calendar } from 'lucide-react'
 
@@ -40,9 +38,6 @@ const getPriorityIcon = (priority: string) => {
 }
 
 export const Tasks = () => {
-  const { user } = useAuth()
-  const [monthlyAttendance, setMonthlyAttendance] = useState(0)
-  const [loadingAttendance, setLoadingAttendance] = useState(true)
   
   const [tasks, setTasks] = useState<Task[]>([])
   const [loadingTasks, setLoadingTasks] = useState(true)
