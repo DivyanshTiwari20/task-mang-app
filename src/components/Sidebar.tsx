@@ -17,6 +17,17 @@ import {
   ChevronRight,
   LogOut,
 } from 'lucide-react'
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarFooter,
+} from "@/components/ui/sidebar"
 
 const navLinks = [
   { href: '/admin-dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
@@ -26,7 +37,7 @@ const navLinks = [
   { href: '/leave-approval', label: 'Leave Approval', icon: ClipboardCheck, roles: ['admin'] },
   { href: '/finance', label: 'Finance', icon: Wallet, roles: ['admin'] },
   { href: '/pages/tasks', label: 'Task', icon: Briefcase, roles: [ 'employee'] },
-  { href: '/pages/admin-leader', label: 'Task', icon: Briefcase, roles: ['leader', 'employee', 'admin'] },
+  { href: '/pages/admin-leader', label: 'Task', icon: Briefcase, roles: [ 'employee', 'admin'] },
 ]
 
 const settingsLinks = [
@@ -37,34 +48,23 @@ interface SidebarItemProps {
   href: string
   label: string
   icon: React.ElementType
-  isExpanded: boolean
+  isActive: boolean
 }
 
-function SidebarItem({ href, label, icon: Icon, isExpanded }: SidebarItemProps) {
-  const pathname = usePathname()
-  const isActive = pathname === href
-
+function SidebarItem({ href, label, icon: Icon, isActive }: SidebarItemProps) {
   return (
-    <Link
-      href={href}
-      className={`
-        group relative flex items-center p-3 my-1 rounded-lg transition-colors
-        ${isActive
-          ? 'bg-gradient-to-tr from-indigo-200 to-indigo-100 text-indigo-800 dark:from-indigo-800 dark:to-indigo-900 dark:text-white'
-          : 'hover:bg-indigo-50 text-gray-600 dark:text-gray-300 dark:hover:bg-gray-700'
-        }
-      `}
-      title={!isExpanded ? label : ''}
-    >
-      <Icon className="w-6 h-6 flex-shrink-0" />
-      <span className={`overflow-hidden transition-all whitespace-nowrap ${isExpanded ? 'w-40 ml-3 opacity-100' : 'w-0 ml-0 opacity-0'}`}>
-        {label}
-      </span>
-    </Link>
+    <SidebarMenuItem>
+      <SidebarMenuButton asChild isActive={isActive}>
+        <Link href={href}>
+          <Icon className='w-8 h-8'/>
+          <span className='text-base'>{label}</span>
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
   )
 }
 
-export default function Sidebar() {
+export default function AppSidebar() {
   const [isExpanded, setIsExpanded] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
   const { user, logout } = useAuth()
@@ -98,51 +98,61 @@ export default function Sidebar() {
     router.push('/login')
   }
 
-
   const effectiveExpanded = isMobile ? false : isExpanded
 
   return (
-    <aside
-      className={`
-        sticky top-0 h-screen flex flex-col bg-white border-r border-gray-200 
-        transition-all duration-300 ease-in-out shadow-sm
-        ${effectiveExpanded ? 'w-64' : 'w-20'}
-        ${isMobile ? 'w-16 sm:w-20' : ''}
-      `}
-    >
-     
+    <Sidebar>
+      <SidebarContent>
+        {/* Navigation Links */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {filteredNavLinks.map(link => (
+                <SidebarItem 
+                  key={link.href} 
+                  href={link.href}
+                  label={link.label}
+                  icon={link.icon}
+                  isActive={pathname === link.href}
+                />
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
-      {/* Navigation Links */}
-      <nav className="flex-1 px-2 mt-4 overflow-y-auto">
-        {filteredNavLinks.map(link => (
-          <SidebarItem key={link.href} {...link} isExpanded={effectiveExpanded} />
-        ))}
-      </nav>
+        {/* Settings Links */}
+        {filteredSettingsLinks.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Settings</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {filteredSettingsLinks.map(link => (
+                  <SidebarItem 
+                    key={link.href} 
+                    href={link.href}
+                    label={link.label}
+                    icon={link.icon}
+                    isActive={pathname === link.href}
+                  />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+      </SidebarContent>
 
-      {/* Settings & Logout */}
-      <div className="border-t border-gray-200 p-2">
-        {filteredSettingsLinks.map(link => (
-          <SidebarItem key={link.href} {...link} isExpanded={effectiveExpanded} />
-        ))}
-        
-        <button
-          onClick={handleLogout}
-          className="group relative w-full text-left flex items-center p-3 my-1 rounded-lg hover:bg-red-100 text-red-600 transition-colors"
-          title={!effectiveExpanded ? 'Logout' : ''}
-        >
-          <LogOut className="w-6 h-6 flex-shrink-0" />
-          <span className={`overflow-hidden transition-all whitespace-nowrap ${effectiveExpanded ? 'w-40 ml-3 opacity-100' : 'w-0 ml-0 opacity-0'}`}>
-            Logout
-          </span>
-          
-          {/* Tooltip for collapsed logout button */}
-          {!effectiveExpanded && (
-            <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 whitespace-nowrap">
-              Logout
-            </div>
-          )}
-        </button>
-      </div>
-    </aside>
+      {/* Logout Button */}
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={handleLogout}>
+              <LogOut />
+              <span className='text-base'>Logout</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
   )
 }
