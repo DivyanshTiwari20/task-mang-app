@@ -28,6 +28,7 @@ import {
   SidebarMenuItem,
   SidebarFooter,
 } from "@/components/ui/sidebar"
+import { ModeToggle } from './ModeToggle'
 
 const navLinks = [
   { href: '/admin-dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
@@ -36,8 +37,8 @@ const navLinks = [
   { href: '/pages/employeeList', label: 'Employee List', icon: Users, roles: ['admin', 'leader'] },
   { href: '/leave-approval', label: 'Leave Approval', icon: ClipboardCheck, roles: ['admin'] },
   { href: '/finance', label: 'Finance', icon: Wallet, roles: ['admin'] },
-  { href: '/pages/tasks', label: 'Task', icon: Briefcase, roles: [ 'employee'] },
-  { href: '/pages/admin-leader', label: 'Task', icon: Briefcase, roles: [ 'employee', 'admin'] },
+  { href: '/pages/tasks', label: 'Task', icon: Briefcase, roles: ['employee'] },
+  { href: '/pages/admin-leader', label: 'Task', icon: Briefcase, roles: ['employee', 'admin'] },
 ]
 
 const settingsLinks = [
@@ -56,7 +57,7 @@ function SidebarItem({ href, label, icon: Icon, isActive }: SidebarItemProps) {
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={isActive}>
         <Link href={href}>
-          <Icon className='w-8 h-8'/>
+          <Icon className='w-8 h-8' />
           <span className='text-base'>{label}</span>
         </Link>
       </SidebarMenuButton>
@@ -109,8 +110,8 @@ export default function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {filteredNavLinks.map(link => (
-                <SidebarItem 
-                  key={link.href} 
+                <SidebarItem
+                  key={link.href}
                   href={link.href}
                   label={link.label}
                   icon={link.icon}
@@ -128,8 +129,8 @@ export default function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {filteredSettingsLinks.map(link => (
-                  <SidebarItem 
-                    key={link.href} 
+                  <SidebarItem
+                    key={link.href}
                     href={link.href}
                     label={link.label}
                     icon={link.icon}
@@ -141,7 +142,7 @@ export default function AppSidebar() {
           </SidebarGroup>
         )}
       </SidebarContent>
-
+      <ModeToggle />
       {/* Logout Button */}
       <SidebarFooter>
         <SidebarMenu>

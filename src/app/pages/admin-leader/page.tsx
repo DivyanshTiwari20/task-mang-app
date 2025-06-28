@@ -137,14 +137,14 @@ const Tasks = () => {
     })
   }
 
-  if (loadingTasks) {
+if (loadingTasks) {
     return (
       <div className="p-6">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+          <div className="h-8 bg-muted rounded w-1/4 mb-6"></div>
           <div className="space-y-3">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-12 bg-gray-100 rounded"></div>
+              <div key={i} className="h-12 bg-muted/50 rounded"></div>
             ))}
           </div>
         </div>
@@ -153,67 +153,67 @@ const Tasks = () => {
   }
 
   return (
-    <div className="p-6 bg-white min-h-screen">
+    <div className="p-6 bg-background min-h-screen">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-6">
+        <h1 className="text-2xl font-semibold text-foreground mb-6">
           My Active Tasks
         </h1>
         
         {tasks.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-gray-500 mb-2">No tasks found</div>
-            <div className="text-sm text-gray-400">
+            <div className="text-muted-foreground mb-2">No tasks found</div>
+            <div className="text-sm text-muted-foreground/70">
               {userRole === 'admin' ? 'No tasks in the system' : 'You haven\'t assigned any tasks yet'}
             </div>
           </div>
         ) : (
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="bg-card border border-border rounded-lg overflow-hidden">
+            <table className="min-w-full divide-y divide-border">
+              <thead className="bg-muted/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Priority
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Task
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Assignee
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Deadline
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-card divide-y divide-border">
                 {tasks.map((task) => (
-                  <tr key={task.id} className="hover:bg-gray-50">
+                  <tr key={task.id} className="hover:bg-muted/30">
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getPriorityBadge(task.priority)}
                     </td>
                     <td className="px-6 py-4">
                       <div className="max-w-xs">
-                        <div className="text-sm font-medium text-gray-900 truncate">
+                        <div className="text-sm font-medium text-card-foreground truncate">
                           {task.title}
                         </div>
-                        <div className="text-sm text-gray-500 truncate">
+                        <div className="text-sm text-muted-foreground truncate">
                           {task.description}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
+                      <div className="text-sm text-card-foreground">
                         {task.assignee_name || 'Unknown User'}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-card-foreground">
                       {formatDate(task.due_date)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button className="text-indigo-600 hover:text-indigo-900 flex items-center gap-1">
+                      <button className="text-primary hover:text-primary/80 flex items-center gap-1">
                         <Eye className="w-4 h-4" />
                         View Details
                       </button>

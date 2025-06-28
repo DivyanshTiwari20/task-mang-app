@@ -176,12 +176,12 @@ export default function EmployeeProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Employee Profile</h1>
-          <p className="text-gray-600">Manage your personal information and profile settings</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Employee Profile</h1>
+          <p className="text-foreground">Manage your personal information and profile settings</p>
         </div>
 
         {/* Success/Error Message */}
@@ -239,7 +239,7 @@ export default function EmployeeProfilePage() {
                   </div>
                 )}
                 
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-foreground mt-2">
                   Click the camera icon to update your photo
                   <br />
                   Max size: 2MB
@@ -340,7 +340,7 @@ export default function EmployeeProfilePage() {
                 <CardTitle className="flex items-center gap-2">
                   <Building className="w-5 h-5" />
                   Work Information
-                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full ml-auto">
+                  <span className="text-xs bg-gray-100 text-black px-2 py-1 rounded-full ml-auto">
                     Read Only
                   </span>
                 </CardTitle>
@@ -348,7 +348,7 @@ export default function EmployeeProfilePage() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Employee ID
                     </label>
                     <input
@@ -360,7 +360,7 @@ export default function EmployeeProfilePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Department
                     </label>
                     <input
@@ -372,7 +372,7 @@ export default function EmployeeProfilePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Position
                     </label>
                     <input
@@ -384,7 +384,7 @@ export default function EmployeeProfilePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium tex-foreground mb-2">
                       Manager
                     </label>
                     <input
@@ -396,7 +396,7 @@ export default function EmployeeProfilePage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       <Calendar className="w-4 h-4 inline mr-1" />
                       Join Date
                     </label>
@@ -428,7 +428,7 @@ export default function EmployeeProfilePage() {
             className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
               hasChanges && !saving
                 ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-xl'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-indigo-600 text-white-500 cursor-not-allowed'
             }`}
           >
             {saving ? (
