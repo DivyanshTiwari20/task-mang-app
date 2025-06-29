@@ -169,13 +169,13 @@ export function AttendanceCard() {
     <Card className='bg-purple-200'>
       <CardHeader>
         <CardTitle className="text-lg">Today&apos;s Attendance</CardTitle>
-        <div className="text-xs text-gray-600">
+        {/* <div className="text-xs text-gray-600">
           Current Cycle: {currentCycle.start} to {currentCycle.end}
-        </div>
+        </div> */}
       </CardHeader>
       <CardContent className="space-y-4">
         {isTodaySunday && (
-          <div className="text-center text-sm text-orange-600 font-medium p-2 bg-orange-50 rounded">
+          <div className="text-start text-sm text-gray-500 font-medium p-2 ">
             🏖️ Today is Sunday - No attendance required
           </div>
         )}

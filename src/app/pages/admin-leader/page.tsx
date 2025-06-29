@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
-import { 
-  Calendar, 
-  User, 
+import {
+  Calendar,
+  User,
   Eye,
   AlertCircle,
   Clock,
@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import Link from 'next/link'
 
 interface Task {
   id: number
@@ -92,21 +93,23 @@ const Tasks = () => {
   const [userDepartment, setUserDepartment] = useState<number | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [priorityFilter, setPriorityFilter] = useState<string>('all')
+  const [overdueFilter, setOverdueFilter] = useState<string>('all')
+  const [roleFilter, setRoleFilter] = useState<string>('assigned') // for leader role
 
   // Fetch user role and department
   useEffect(() => {
     const fetchUserInfo = async () => {
       if (!user?.id) return
-      
+
       try {
         const { data: userData, error } = await supabase
           .from('users')
           .select('role, department_id')
           .eq('id', user.id)
           .single()
-        
+
         if (error) throw error
-        
+
         setUserRole(userData.role)
         setUserDepartment(userData.department_id)
       } catch (error) {
@@ -121,9 +124,9 @@ const Tasks = () => {
   useEffect(() => {
     const fetchTasks = async () => {
       if (!user?.id || !userRole) return
-      
+
       setLoadingTasks(true)
-      
+
       try {
         let query = supabase.from('tasks').select(`
           *,
@@ -137,14 +140,16 @@ const Tasks = () => {
           console.log('Admin mode - fetching all tasks')
         } else if (userRole === 'leader') {
           console.log('Leader mode - user.id:', user.id, 'type:', typeof user.id)
-          query = query.eq('assigned_by_id', user.id)
-        } else {
-          console.log('User mode - user.id:', user.id, 'type:', typeof user.id)
-          query = query.eq('assigned_by_id', user.id)
+          // REPLACE THE EXISTING LINE WITH:
+          if (roleFilter === 'assigned') {
+            query = query.eq('assigned_by_id', user.id) // tasks he assigned
+          } else if (roleFilter === 'assigned_to') {
+            query = query.eq('assignee_id', user.id) // tasks assigned to him
+          }
         }
 
         const { data: tasksData, error } = await query.order('due_date', { ascending: true })
-        
+
         if (error) throw error
 
         const tasksWithAssignees = await Promise.all(
@@ -173,7 +178,7 @@ const Tasks = () => {
     }
 
     fetchTasks()
-  }, [user, userRole, userDepartment])
+  }, [user, userRole, userDepartment, roleFilter])
 
   // Filter tasks based on status and priority
   useEffect(() => {
@@ -186,9 +191,16 @@ const Tasks = () => {
     if (priorityFilter !== 'all') {
       filtered = filtered.filter(task => task.priority.toLowerCase() === priorityFilter)
     }
-
+    if (overdueFilter !== 'all') {
+      const now = new Date()
+      if (overdueFilter === 'overdue') {
+        filtered = filtered.filter(task => new Date(task.due_date) < now && new Date(task.due_date).toDateString() !== now.toDateString())
+      } else if (overdueFilter === 'not_overdue') {
+        filtered = filtered.filter(task => new Date(task.due_date) >= now || new Date(task.due_date).toDateString() === now.toDateString())
+      }
+    }
     setFilteredTasks(filtered)
-  }, [tasks, statusFilter, priorityFilter])
+  }, [tasks, statusFilter, priorityFilter, overdueFilter])
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -243,13 +255,29 @@ const Tasks = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Active Tasks</h1>
           <p className="text-muted-foreground">
-            {userRole === 'admin' ? 'All tasks in the system' : 'Tasks you have assigned'}
+            {userRole === 'admin'
+              ? 'All tasks in the system'
+              : userRole === 'leader'
+                ? (roleFilter === 'assigned' ? 'Tasks you have assigned' : 'Tasks assigned to you')
+                : 'Tasks you have assigned'
+            }
           </p>
         </div>
-        
+
         {/* Filters */}
         <div className="flex gap-2 items-center">
           <Filter className="w-4 h-4 text-muted-foreground" />
+          {userRole === 'leader' && (
+            <Select value={roleFilter} onValueChange={setRoleFilter}>
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="View" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="assigned">Tasks I Assigned</SelectItem>
+                <SelectItem value="assigned_to">Tasks Assigned to Me</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-32">
               <SelectValue placeholder="Status" />
@@ -262,7 +290,7 @@ const Tasks = () => {
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
-          
+
           <Select value={priorityFilter} onValueChange={setPriorityFilter}>
             <SelectTrigger className="w-32">
               <SelectValue placeholder="Priority" />
@@ -275,9 +303,19 @@ const Tasks = () => {
               <SelectItem value="low">Low</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={overdueFilter} onValueChange={setOverdueFilter}>
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="Overdue" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Tasks</SelectItem>
+              <SelectItem value="overdue">Overdue</SelectItem>
+              <SelectItem value="not_overdue">Not Overdue</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
-      
+
       {filteredTasks.length === 0 ? (
         <Card className="text-center p-12">
           <div className="text-muted-foreground mb-2">
@@ -291,9 +329,8 @@ const Tasks = () => {
         <>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredTasks.map((task) => (
-              <Card key={task.id} className={`transition-all hover:shadow-md ${
-                isOverdue(task.due_date) ? 'border-destructive/50 bg-destructive/5' : ''
-              }`}>
+              <Card key={task.id} className={`transition-all hover:shadow-md ${isOverdue(task.due_date) ? 'border-destructive/50 bg-destructive/5' : ''
+                }`}>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
@@ -313,7 +350,7 @@ const Tasks = () => {
                     </div>
                   </div>
                 </CardHeader>
-                
+
                 <CardContent className="space-y-4">
                   {/* Status */}
                   <div className="flex items-center gap-2">
@@ -364,7 +401,7 @@ const Tasks = () => {
                         )}
                       </div>
                     </div>
-                    
+
                     {task.assigned_at && (
                       <div className="text-xs text-muted-foreground">
                         Assigned: {formatDateTime(task.assigned_at)}
@@ -374,16 +411,19 @@ const Tasks = () => {
 
                   {/* Actions */}
                   <div className="pt-2">
-                    <Button variant="outline" size="sm" className="w-full">
-                      <Eye className="w-4 h-4 mr-2" />
-                      View Details
+                    // In your Tasks component, replace the View Details button with:
+                    <Button variant="outline" size="sm" className="w-full" asChild>
+                      <Link href={`/pages/task-detail/${task.id}`}>
+                        <Eye className="w-4 h-4 mr-2" />
+                        View Details
+                      </Link>
                     </Button>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
-          
+
           {/* Footer Info */}
           <Card className="bg-muted/30">
             <CardContent className="py-3">

@@ -15,8 +15,10 @@ import {
   Building,
   Calendar,
   Shield,
-  DollarSign
+  DollarSign,
+  Key
 } from 'lucide-react'
+import UpdatePasswordModal from '@/components/UpdatePasswordModal'
 
 interface EmployeeProfile {
   id: string
@@ -52,6 +54,7 @@ export default function EmployeeProfilePage() {
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
   const [hasChanges, setHasChanges] = useState(false)
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
 
   // Load profile data on component mount
   useEffect(() => {
@@ -157,7 +160,7 @@ export default function EmployeeProfilePage() {
         const data = await response.json()
         throw new Error(data.error || 'Failed to update profile')
       }
-    } catch (error) {
+    } catch (error: any) {
       setMessage({ type: 'error', text: error.message || 'Failed to update profile' })
     } finally {
       setSaving(false)
@@ -247,8 +250,7 @@ export default function EmployeeProfilePage() {
               </CardContent>
             </Card>
           </div>
-
-          {/* Personal Information */}
+          {/* Personal and Work Information */}
           <div className="lg:col-span-2 space-y-6">
             {/* Editable Information */}
             <Card>
@@ -412,7 +414,7 @@ export default function EmployeeProfilePage() {
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 dark:bg-blue-900/20 dark:border-blue-800/30">
                   <p className="text-sm text-blue-800 dark:text-blue-400 flex items-center gap-2">
                     <Shield className="w-4 h-4" />
-                    Work information is managed by your administrator and cannot be modified from here.
+                    Work information is managed by your administrator and cannot be modified.
                   </p>
                 </div>
               </CardContent>
@@ -420,29 +422,54 @@ export default function EmployeeProfilePage() {
           </div>
         </div>
 
-        {/* Save Button */}
-        <div className="mt-8 flex justify-end">
-          <button
-            onClick={handleSave}
-            disabled={!hasChanges || saving}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
-              hasChanges && !saving
-                ? 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl'
-                : 'bg-muted text-muted-foreground cursor-not-allowed'
-            }`}
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="w-5 h-5" />
-                Save Changes
-              </>
-            )}
-          </button>
+        {/* Save Changes and Update Password Section */}
+        <div className="mt-8">
+          {/* Save Changes Section */}
+          <div className="flex justify-end">
+            <button
+              onClick={handleSave}
+              disabled={!hasChanges || saving}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                hasChanges && !saving
+                  ? 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl'
+                  : 'bg-muted text-muted-foreground cursor-not-allowed'
+              }`}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-5 h-5" />
+                  Save Changes
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className="my-6">
+            <div className="border-t border-border"></div>
+          </div>
+
+          {/* Update Password Section */}
+          <div className="flex justify-end">
+            <button
+              onClick={() => setIsPasswordModalOpen(true)}
+              className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all bg-secondary hover:bg-secondary/80 text-secondary-foreground border border-border hover:border-border/80 shadow-sm hover:shadow-md"
+            >
+              <Key className="w-5 h-5" />
+              Update Password
+            </button>
+          </div>
+
+          {/* Update Password Modal */}
+          <UpdatePasswordModal 
+            isOpen={isPasswordModalOpen}
+            onClose={() => setIsPasswordModalOpen(false)}
+          />
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { useAuth } from '@/lib/auth' // Adjust path as needed
+import { useAuth } from '@/lib/auth'
 
 interface UpdatePasswordModalProps {
   isOpen: boolean
@@ -24,7 +24,6 @@ export default function UpdatePasswordModal({ isOpen, onClose }: UpdatePasswordM
       ...prev,
       [name]: value
     }))
-    // Clear error when user starts typing
     if (error) setError(null)
   }
 
@@ -54,7 +53,6 @@ export default function UpdatePasswordModal({ isOpen, onClose }: UpdatePasswordM
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
     if (!validateForm()) return
 
     setLoading(true)
@@ -113,34 +111,35 @@ export default function UpdatePasswordModal({ isOpen, onClose }: UpdatePasswordM
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-background border border-border rounded-lg p-6 w-full max-w-md mx-4 shadow-xl">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-800">Update Password</h2>
+          <h2 className="text-xl font-semibold text-foreground">Update Password</h2>
           <button
             onClick={handleClose}
             disabled={loading}
-            className="text-gray-500 hover:text-gray-700 text-2xl font-bold disabled:opacity-50"
+            className="text-muted-foreground hover:text-foreground text-2xl font-bold disabled:opacity-50"
+            aria-label="Close"
           >
             ×
           </button>
         </div>
 
         {success && (
-          <div className="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+          <div className="mb-4 p-3 bg-green-100 dark:bg-green-900/20 border border-green-400 text-green-800 dark:text-green-300 rounded">
             Password updated successfully!
           </div>
         )}
 
         {error && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/20 border border-red-400 text-red-800 dark:text-red-300 rounded">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="currentPassword" className="block text-sm font-medium text-foreground mb-1">
               Current Password
             </label>
             <input
@@ -150,13 +149,13 @@ export default function UpdatePasswordModal({ isOpen, onClose }: UpdatePasswordM
               value={formData.currentPassword}
               onChange={handleInputChange}
               disabled={loading}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+              className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="newPassword" className="block text-sm font-medium text-foreground mb-1">
               New Password
             </label>
             <input
@@ -166,13 +165,13 @@ export default function UpdatePasswordModal({ isOpen, onClose }: UpdatePasswordM
               value={formData.newPassword}
               onChange={handleInputChange}
               disabled={loading}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+              className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground mb-1">
               Confirm New Password
             </label>
             <input
@@ -182,7 +181,7 @@ export default function UpdatePasswordModal({ isOpen, onClose }: UpdatePasswordM
               value={formData.confirmPassword}
               onChange={handleInputChange}
               disabled={loading}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+              className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary disabled:bg-muted"
               required
             />
           </div>
@@ -192,14 +191,14 @@ export default function UpdatePasswordModal({ isOpen, onClose }: UpdatePasswordM
               type="button"
               onClick={handleClose}
               disabled={loading}
-              className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-muted text-foreground rounded-md hover:bg-muted/80 focus:outline-none focus:ring-2 focus:ring-muted-foreground disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Updating...' : 'Update Password'}
             </button>
