@@ -411,7 +411,7 @@ const Tasks = () => {
 
                   {/* Actions */}
                   <div className="pt-2">
-                    // In your Tasks component, replace the View Details button with:
+
                     <Button variant="outline" size="sm" className="w-full" asChild>
                       <Link href={`/pages/task-detail/${task.id}`}>
                         <Eye className="w-4 h-4 mr-2" />
