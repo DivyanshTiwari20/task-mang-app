@@ -31,10 +31,10 @@ import {
 } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { 
-  CalendarIcon, 
-  User, 
-  Building, 
+import {
+  CalendarIcon,
+  User,
+  Building,
   Mail,
   Clock,
   FileText,
@@ -64,18 +64,18 @@ interface AssignTaskSheetProps {
 
 export default function AssignTaskSheet({ isOpen, onClose, employee }: AssignTaskSheetProps) {
   const { user } = useAuth();
-  
+
   // Form state
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDescription, setTaskDescription] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
   const [dueDate, setDueDate] = useState<Date>();
   const [assignmentNotes, setAssignmentNotes] = useState('');
-  
+
   // UI state
   const [loading, setLoading] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  
+
   // User details for assignment tracking
   const [assignerDetails, setAssignerDetails] = useState<{
     name: string;
@@ -85,17 +85,19 @@ export default function AssignTaskSheet({ isOpen, onClose, employee }: AssignTas
 
   // Fetch current user details for assignment tracking
   useEffect(() => {
+    // In components/AssignTaskSheet.tsx - Replace the fetchAssignerDetails function
     const fetchAssignerDetails = async () => {
       if (!user) return;
-      
+
       try {
         const { data: userData, error } = await supabase
           .from('users')
           .select(`
-            full_name,
-            email,
-            departments(name)
-          `)
+        full_name,
+        email,
+        department_id,
+        departments!inner(name)
+      `)
           .eq('id', user.id)
           .single();
 
@@ -104,11 +106,16 @@ export default function AssignTaskSheet({ isOpen, onClose, employee }: AssignTas
         setAssignerDetails({
           name: userData.full_name || 'Unknown',
           email: userData.email || '',
-          department: userData.departments?.name || 'Unknown Department'
+          department: userData.departments?.[0]?.name || 'Unknown Department'
         });
       } catch (error) {
         console.error('Error fetching assigner details:', error);
-        toast.error('Failed to load user details');
+        // Set default values if query fails
+        setAssignerDetails({
+          name: user.full_name || 'Unknown',
+          email: user.email || '',
+          department: 'Unknown Department'
+        });
       }
     };
 
@@ -145,6 +152,7 @@ export default function AssignTaskSheet({ isOpen, onClose, employee }: AssignTas
   };
 
   const handleAssignTask = async () => {
+
     if (!user || !employee || !assignerDetails) {
       toast.error('Missing required information');
       return;
@@ -225,7 +233,7 @@ export default function AssignTaskSheet({ isOpen, onClose, employee }: AssignTas
           <SheetDescription className="text-base">
             Create and assign a task to the selected employee
           </SheetDescription>
-          
+
           {/* Employee Info Card */}
           <div className="bg-muted/50 rounded-lg p-4 space-y-2">
             <div className="flex items-center gap-2 text-sm font-medium">

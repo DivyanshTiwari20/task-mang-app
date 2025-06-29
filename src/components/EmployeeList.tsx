@@ -14,9 +14,16 @@ interface EmployeeListProps {
   showAssignTask?: boolean
 }
 
-interface EmployeeWithAttendance extends CustomUser {
+interface EmployeeWithAttendance {
+  id: number
+  username: string
+  email: string
+  full_name: string
+  role: 'admin' | 'leader' | 'employee'
+  department_id: number  // Changed from 'number | null' to 'number'
+  gender?: 'male' | 'female'
+  profile_image?: string
   todayAttendance?: {
-    username:string;
     check_in: string | null
     check_out: string | null
   }
@@ -25,10 +32,6 @@ interface EmployeeWithAttendance extends CustomUser {
     id: string
     name: string
   }
-  full_name?: string
-  username?: string
-  gender?: 'male' | 'female'
-  profile_image?: string
 }
 
 export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
@@ -63,6 +66,7 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
       .from('users')
       .select(`
         id,
+        email,
         full_name,
         username,
         role,
@@ -99,29 +103,31 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
       const currentYear = today.getFullYear()
 
       const employeesWithAttendance = await Promise.all(
-        usersData.map(async (emp) => {
-          // Fetch today's attendance
-          const { data: todayData } = await supabase
-            .from('attendance')
-            .select('check_in, check_out')
-            .eq('user_id', emp.id)
-            .eq('date', todayISO)
-            .single()
+        usersData
+          .filter((emp: any) => emp.department_id !== null) // Filter out employees without department_id
+          .map(async (emp: any) => {
+            // Fetch today's attendance
+            const { data: todayData } = await supabase
+              .from('attendance')
+              .select('check_in, check_out')
+              .eq('user_id', emp.id)
+              .eq('date', todayISO)
+              .single()
 
-          // Fetch monthly attendance count
-          const { data: monthlyData } = await supabase
-            .from('attendance')
-            .select('id')
-            .eq('user_id', emp.id)
-            .gte('date', `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`)
-            .not('check_in', 'is', null)
+            // Fetch monthly attendance count
+            const { data: monthlyData } = await supabase
+              .from('attendance')
+              .select('id')
+              .eq('user_id', emp.id)
+              .gte('date', `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`)
+              .not('check_in', 'is', null)
 
-          return {
-            ...emp,
-            todayAttendance: todayData,
-            monthlyAttendance: monthlyData?.length || 0
-          }
-        })
+            return {
+              ...emp,
+              todayAttendance: todayData,
+              monthlyAttendance: monthlyData?.length || 0
+            } as EmployeeWithAttendance
+          })
       )
       setEmployees(employeesWithAttendance)
     }
@@ -153,8 +159,8 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
     return !!attendance?.check_in
   }
 
-  const handleAssignTaskClick = (employeeId: string) => {
-    setSelectedEmployeeId(employeeId)
+  const handleAssignTaskClick = (employeeId: number) => {
+    setSelectedEmployeeId(employeeId.toString())
     setIsAssignSheetOpen(true)
   }
 
@@ -267,7 +273,7 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
             setIsAssignSheetOpen(false)
             setSelectedEmployeeId(null)
           }}
-          employeeId={selectedEmployeeId}
+          employee={filteredEmployees.find(emp => emp.id.toString() === selectedEmployeeId) || null}
         />
       )}
     </div>

@@ -62,45 +62,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify assignee exists and is active
+    // Verify assignee exists - Fixed query to match your schema
     const { data: assignee, error: assigneeError } = await supabase
       .from('users')
-      .select('id, full_name, email, department_id, is_active')
+      .select('id, full_name, email, department_id')
       .eq('id', assignee_id)
       .single();
 
     if (assigneeError || !assignee) {
+      console.error('Assignee lookup error:', assigneeError);
       return NextResponse.json(
         { message: 'Assignee not found' },
         { status: 404 }
       );
     }
 
-    if (!assignee.is_active) {
-      return NextResponse.json(
-        { message: 'Cannot assign task to inactive user' },
-        { status: 400 }
-      );
-    }
-
-    // Verify assigner exists and has permission
+    // Verify assigner exists - Removed is_active check
     const { data: assigner, error: assignerError } = await supabase
       .from('users')
-      .select('id, full_name, role, is_active')
+      .select('id, full_name, role')
       .eq('id', assigned_by_id)
       .single();
 
     if (assignerError || !assigner) {
+      console.error('Assigner lookup error:', assignerError);
       return NextResponse.json(
         { message: 'Assigner not found' },
         { status: 404 }
-      );
-    }
-
-    if (!assigner.is_active) {
-      return NextResponse.json(
-        { message: 'Inactive users cannot assign tasks' },
-        { status: 403 }
       );
     }
 
@@ -113,14 +101,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Insert the task with comprehensive assignment information
+    // Insert the task - Now with all required fields
     const { data: task, error: taskError } = await supabase
       .from('tasks')
       .insert({
         title: title.trim(),
         description: description.trim(),
         assignee_id: parseInt(assignee_id),
-        department_id: parseInt(department_id),
+        department_id: parseInt(department_id), 
         due_date,
         priority,
         assigned_by_id: parseInt(assigned_by_id),
@@ -129,9 +117,8 @@ export async function POST(request: NextRequest) {
         assigned_by_department,
         assignment_notes: assignment_notes?.trim() || null,
         assigned_at: new Date().toISOString(),
-        status: 'pending', // Default status
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        status: 'pending'
+        // created_at and updated_at will be set automatically by database defaults
       })
       .select()
       .single();
@@ -146,9 +133,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-
-    // Optional: Send notification to assignee (implement based on your notification system)
-    // await sendTaskAssignmentNotification(assignee, task, assigner);
 
     return NextResponse.json(
       {
