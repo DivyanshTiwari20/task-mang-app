@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Search } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
-import { useRouter } from 'next/navigation'
-import type { CustomUser } from '@/lib/auth';
+import AssignTaskSheet from '@/components/AssignTaskSheet'
+import type { CustomUser } from '@/lib/auth'
 
 interface EmployeeListProps {
   showAssignTask?: boolean
@@ -16,38 +16,31 @@ interface EmployeeListProps {
 
 interface EmployeeWithAttendance extends CustomUser {
   todayAttendance?: {
+    username:string;
     check_in: string | null
     check_out: string | null
   }
   monthlyAttendance?: number
   department?: {
-    id: string;
-    name: string;
+    id: string
+    name: string
   }
-  full_name?: string;
-  username?: string;
+  full_name?: string
+  username?: string
+  gender?: 'male' | 'female'
+  profile_image?: string
 }
 
 export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
-  const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
-  const [employees, setEmployees] = useState<EmployeeWithAttendance[]>([]);
-  const [filteredEmployees, setFilteredEmployees] = useState<EmployeeWithAttendance[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [dataLoading, setDataLoading] = useState(true);
-  const hasMounted = useRef(false);
-  // const { user } = useAuth()
-  const [profile, setProfile] = useState<EmployeeProfile>({
-    id: user?.id || '',
-    fullname: '',
-    email: user?.email || '',
-    phone: '',
-    address: '',
-    profile_image: '',
-    gender: 'male'
-  })
+  const { user, loading: authLoading } = useAuth()
+  const [employees, setEmployees] = useState<EmployeeWithAttendance[]>([])
+  const [filteredEmployees, setFilteredEmployees] = useState<EmployeeWithAttendance[]>([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [dataLoading, setDataLoading] = useState(true)
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null)
+  const [isAssignSheetOpen, setIsAssignSheetOpen] = useState(false)
 
-  const getDefaultAvatar = (gender: string) => {
+  const getDefaultAvatar = (gender?: string) => {
     switch (gender) {
       case 'female':
         return '/avatars/female-default.png'
@@ -57,14 +50,15 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
         return '/avatars/default-avatar.png'
     }
   }
+
   const fetchEmployees = useCallback(async () => {
     if (!user) {
-      setDataLoading(false);
-      setEmployees([]);
-      return;
+      setDataLoading(false)
+      setEmployees([])
+      return
     }
 
-    setDataLoading(true);
+    setDataLoading(true)
     let query = supabase
       .from('users')
       .select(`
@@ -72,132 +66,114 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
         full_name,
         username,
         role,
+        gender,
+        profile_image,
         department_id,
         department:departments(id, name)
-      `);
+      `)
 
     if (user.role === 'admin') {
-      query = query.not('role', 'eq', 'admin');
+      query = query.not('role', 'eq', 'admin')
     } else if (user.role === 'leader') {
       query = query
         .eq('department_id', user.department_id)
-        .eq('role', 'employee');
+        .eq('role', 'employee')
     } else {
-      console.log('Employee or unauthorized user attempting to view employee list.');
-      setDataLoading(false);
-      setEmployees([]);
-      return;
+      setDataLoading(false)
+      setEmployees([])
+      return
     }
 
-    const { data: usersData, error: usersError } = await query;
+    const { data: usersData, error: usersError } = await query
 
     if (usersError) {
-      console.error('Error fetching users:', usersError.message);
-      setDataLoading(false);
-      return;
+      console.error('Error fetching users:', usersError.message)
+      setDataLoading(false)
+      return
     }
 
     if (usersData) {
-      const today = new Date();
-      const todayISO = today.toISOString().split('T')[0];
-      const currentMonth = today.getMonth() + 1;
-      const currentYear = today.getFullYear();
+      const today = new Date()
+      const todayISO = today.toISOString().split('T')[0]
+      const currentMonth = today.getMonth() + 1
+      const currentYear = today.getFullYear()
 
       const employeesWithAttendance = await Promise.all(
-        usersData.map(async (emp  ) => {
-          const { data: todayData, error: todayError } = await supabase
+        usersData.map(async (emp) => {
+          // Fetch today's attendance
+          const { data: todayData } = await supabase
             .from('attendance')
             .select('check_in, check_out')
             .eq('user_id', emp.id)
             .eq('date', todayISO)
-            .single();
+            .single()
 
-          if (todayError && todayError.code !== 'PGRST116') {
-            console.error(`Error fetching today's attendance for ${emp.id}:`, todayError.message);
-          }
-
-          const { data: monthlyData, error: monthlyError } = await supabase
+          // Fetch monthly attendance count
+          const { data: monthlyData } = await supabase
             .from('attendance')
             .select('id')
             .eq('user_id', emp.id)
             .gte('date', `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`)
-            .not('check_in', 'is', null);
-
-          if (monthlyError) {
-            console.error(`Error fetching monthly attendance for ${emp.id}:`, monthlyError.message);
-          }
+            .not('check_in', 'is', null)
 
           return {
             ...emp,
             todayAttendance: todayData,
             monthlyAttendance: monthlyData?.length || 0
-          };
+          }
         })
-      );
-      setEmployees(employeesWithAttendance);
+      )
+      setEmployees(employeesWithAttendance)
     }
-    setDataLoading(false);
-  }, [user]);
+    setDataLoading(false)
+  }, [user])
 
   useEffect(() => {
-    hasMounted.current = true;
-    if (!authLoading && hasMounted.current) {
-      fetchEmployees();
+    if (!authLoading) {
+      fetchEmployees()
     }
-    return () => {
-      hasMounted.current = false;
-    };
-  }, [user, authLoading, fetchEmployees]);
+  }, [user, authLoading, fetchEmployees])
 
   useEffect(() => {
     const filtered = employees.filter(emp =>
       emp.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       emp.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       emp.department?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredEmployees(filtered);
-  }, [employees, searchTerm]);
+    )
+    setFilteredEmployees(filtered)
+  }, [employees, searchTerm])
 
   const getAttendancePercentage = (monthlyAttendance: number) => {
-    if (!hasMounted.current) return 0;
-    const today = new Date();
-    const workingDaysThisMonth = Math.max(0, today.getDate());
-    if (workingDaysThisMonth === 0) return 0;
-    return Math.round((monthlyAttendance / workingDaysThisMonth) * 100);
-  };
+    const today = new Date()
+    const workingDaysThisMonth = Math.max(1, today.getDate())
+    return Math.round((monthlyAttendance / workingDaysThisMonth) * 100)
+  }
 
   const isCheckedInToday = (attendance?: { check_in: string | null }) => {
-    return !!attendance?.check_in;
-  };
+    return !!attendance?.check_in
+  }
 
   const handleAssignTaskClick = (employeeId: string) => {
-    if (user?.role === 'admin') {
-      router.push(`/admin-dashboard/assign-task/${employeeId}`);
-    } else if (user?.role === 'leader') {
-      router.push(`/leader-dashboard/assign-task/${employeeId}`);
-    }
-  };
+    setSelectedEmployeeId(employeeId)
+    setIsAssignSheetOpen(true)
+  }
 
   const shouldShowAssignTaskButton = (employee: EmployeeWithAttendance) => {
-    if (!showAssignTask || !user) return false;
+    if (!showAssignTask || !user) return false
     
     if (user.role === 'admin') {
-      return employee.role === 'employee' || employee.role === 'leader';
+      return employee.role === 'employee' || employee.role === 'leader'
     }
     
     if (user.role === 'leader') {
-      return employee.role === 'employee';
+      return employee.role === 'employee'
     }
     
-    return false;
-  };
-
-  if (authLoading || dataLoading) {
-    return <div className="text-center py-4">Loading employees...</div>;
+    return false
   }
 
-  if (!hasMounted.current) {
-    return <div className="text-center py-4">Loading...</div>;
+  if (authLoading || dataLoading) {
+    return <div className="text-center py-4">Loading employees...</div>
   }
 
   return (
@@ -215,9 +191,13 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
       <div className="space-y-3">
         {filteredEmployees.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
-            No employees found or you do not have permission to view this list.
+            {employees.length === 0 
+              ? "No employees found or you do not have permission to view this list."
+              : "No employees match your search criteria."
+            }
           </div>
         )}
+        
         {filteredEmployees.map((employee) => (
           <div
             key={employee.id}
@@ -226,12 +206,14 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
             <div className="flex items-center space-x-3">
               <Avatar className="h-10 w-10">
                 <AvatarFallback className="bg-primary/10 text-primary">
-                  {/* {employee.full_name?.split(' ').map(n => n[0]).join('').toUpperCase()} */}
                   <img
-                      src={profile.profile_image || getDefaultAvatar(profile.gender)}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
+                    src={employee.profile_image || getDefaultAvatar(employee.gender)}
+                    alt={`${employee.full_name} avatar`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = getDefaultAvatar(employee.gender)
+                    }}
+                  />
                 </AvatarFallback>
               </Avatar>
 
@@ -247,14 +229,17 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
                 <div className="flex items-center space-x-2 mt-1">
                   <Badge
                     variant={isCheckedInToday(employee.todayAttendance) ? "default" : "secondary"}
-                    className={isCheckedInToday(employee.todayAttendance) ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400" : ""}
+                    className={isCheckedInToday(employee.todayAttendance) 
+                      ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400" 
+                      : ""
+                    }
                   >
                     {isCheckedInToday(employee.todayAttendance) ? 'Checked In' : 'Not Checked In'}
                   </Badge>
                   {employee.role && employee.role !== 'employee' && (
-                     <Badge variant="outline" className="bg-muted text-muted-foreground">
-                        {employee.role.charAt(0).toUpperCase() + employee.role.slice(1)}
-                     </Badge>
+                    <Badge variant="outline" className="bg-muted text-muted-foreground">
+                      {employee.role.charAt(0).toUpperCase() + employee.role.slice(1)}
+                    </Badge>
                   )}
                 </div>
               </div>
@@ -265,7 +250,7 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
                 variant="outline"
                 size="sm"
                 onClick={() => handleAssignTaskClick(employee.id)}
-                className='bg-muted hover:bg-muted/80'
+                className="bg-muted hover:bg-muted/80"
               >
                 Assign Task
               </Button>
@@ -273,6 +258,18 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
           </div>
         ))}
       </div>
+
+      {/* Assign Task Sheet */}
+      {selectedEmployeeId && (
+        <AssignTaskSheet
+          isOpen={isAssignSheetOpen}
+          onClose={() => {
+            setIsAssignSheetOpen(false)
+            setSelectedEmployeeId(null)
+          }}
+          employeeId={selectedEmployeeId}
+        />
+      )}
     </div>
-  );
+  )
 }

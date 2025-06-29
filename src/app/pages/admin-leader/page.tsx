@@ -20,6 +20,7 @@ interface Task {
   priority: string
   assignee_id: number
   assigned_by: number
+  assigned_by_id: number
   department_id: number
   created_at: string
   assignee_name?: string
@@ -27,6 +28,7 @@ interface Task {
   department_name?: string
 }
 
+// task.assignee_name
 const getPriorityBadge = (priority: string) => {
   switch (priority.toLowerCase()) {
     case 'high':
@@ -156,7 +158,7 @@ if (loadingTasks) {
     <div className="p-6 bg-background min-h-screen">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-2xl font-semibold text-foreground mb-6">
-          My Active Tasks
+           Active Tasks
         </h1>
         
         {tasks.length === 0 ? (
@@ -206,7 +208,7 @@ if (loadingTasks) {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-card-foreground">
-                        {task.assignee_name || 'Unknown User'}
+                        {task.assigned_by_id || 'Unknown User'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-card-foreground">

@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { supabase } from './supabase'
 
-interface CustomUser {
+export interface CustomUser {
   id: number;
   username: string;
   email: string;
