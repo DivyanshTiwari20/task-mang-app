@@ -39,7 +39,7 @@ const navLinks = [
   { href: '/pages/leave-approve', label: 'Leave Approval', icon: ClipboardCheck, roles: ['admin', 'leader', 'employee'] },
   { href: '/finance', label: 'Finance', icon: Wallet, roles: ['admin'] },
   { href: '/pages/tasks', label: 'Task', icon: Briefcase, roles: ['employee'] },
-  { href: '/pages/admin-leader', label: 'Task', icon: Briefcase, roles: ['employee', 'admin','leader'] },
+  { href: '/pages/admin-leader', label: 'Task', icon: Briefcase, roles: [ 'admin','leader'] },
 ]
 
 const settingsLinks = [
