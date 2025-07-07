@@ -320,11 +320,12 @@ export default function EmployeeTablePage() {
     return new Date(dateString).toLocaleDateString()
   }
 
+  // Changed to INR
   const formatSalary = (salary?: number) => {
     if (!salary) return 'EMPTY'
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'INR'
     }).format(salary)
   }
 
@@ -341,6 +342,10 @@ export default function EmployeeTablePage() {
     currentPageEmployees.every(emp => selectedEmployees.has(emp.id))
 
   const isSomeSelected = currentPageEmployees.some(emp => selectedEmployees.has(emp.id))
+
+  // Determine if the current user is an admin
+  const isAdmin = user?.role === 'admin'
+  const isLeader = user?.role === 'leader'
 
   if (authLoading || dataLoading) {
     return <div className="text-center py-8">Loading employees...</div>
@@ -486,7 +491,8 @@ export default function EmployeeTablePage() {
                   {getSortIcon('join_date')}
                 </div>
               </TableHead>
-              <TableHead>Salary</TableHead>
+              {/* Only show Salary column if user is admin */}
+              {isAdmin && <TableHead>Salary</TableHead>}
               <TableHead>Status</TableHead>
               <TableHead className="w-12"></TableHead>
             </TableRow>
@@ -494,7 +500,7 @@ export default function EmployeeTablePage() {
           <TableBody>
             {currentPageEmployees.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={13} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={isAdmin ? 13 : 12} className="text-center py-8 text-muted-foreground">
                   {filteredEmployees.length === 0 
                     ? "No employees found or you do not have permission to view this list."
                     : "No employees match your search criteria."
@@ -549,7 +555,10 @@ export default function EmployeeTablePage() {
                   <TableCell>{employee.phone || 'EMPTY'}</TableCell>
                   <TableCell>{employee.manager || 'EMPTY'}</TableCell>
                   <TableCell>{formatDate(employee.join_date)}</TableCell>
-                  <TableCell>{formatSalary(employee.salary)}</TableCell>
+                  {/* Only show Salary cell if user is admin */}
+                  {isAdmin && (
+                    <TableCell>{formatSalary(employee.salary)}</TableCell>
+                  )}
                   <TableCell>
                     <Badge
                       variant={isCheckedInToday(employee.todayAttendance) ? "default" : "secondary"}

@@ -10,61 +10,56 @@ import { useAuth } from '@/lib/auth'
 export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [formLoading, setFormLoading] = useState(false) // Use a separate loading state for the form submission
-  const [formError, setFormError] = useState('') // Use a separate error state for form submission messages
-  const { login, loading: authLoading, user } = useAuth() // Destructure login, authLoading, and user from useAuth
+  const [formLoading, setFormLoading] = useState(false)
+  const [formError, setFormError] = useState('')
+  const { login, loading: authLoading, user } = useAuth()
   const router = useRouter()
 
-  // This useEffect handles redirection based on user's role after login or on initial load
   useEffect(() => {
-    // Only redirect if user data is loaded and not currently in an authentication loading state
     if (user && !authLoading) {
       if (user.role === 'admin') {
-        router.push('/admin-dashboard');
+        router.push('/admin-dashboard')
       } else if (user.role === 'leader') {
-        router.push('/leader-dashboard');
+        router.push('/leader-dashboard')
       } else if (user.role === 'employee') {
-        router.push('/employee-dashboard');
+        router.push('/employee-dashboard')
       } else {
-        // Fallback for roles not explicitly handled, e.g., redirect to a general dashboard
-        router.push('/dashboard');
+        router.push('/dashboard')
       }
     }
-  }, [user, authLoading, router]); // Dependencies for useEffect
+  }, [user, authLoading, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormLoading(true); // Start form loading
-    setFormError(''); // Clear previous form errors
+    e.preventDefault()
+    setFormLoading(true)
+    setFormError('')
 
     if (!username || !password) {
-      setFormError('Please enter both username and password.');
-      setFormLoading(false);
-      return;
+      setFormError('Please enter both username and password.')
+      setFormLoading(false)
+      return
     }
 
-    // Call the login function from AuthContext
-    const { success, error: loginError } = await login(username, password);
+    const { success, error: loginError } = await login(username, password)
 
     if (success) {
-      console.log('Login successful!');
-      // Redirection will be handled by the useEffect above
+      // Redirection handled by useEffect
     } else {
-      setFormError(loginError || 'Invalid username or password.'); // Display error from login function or a generic one
+      setFormError(loginError || 'Invalid username or password.')
     }
 
-    setFormLoading(false); // End form loading
-  };
+    setFormLoading(false)
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <Card className="w-full max-w-md shadow-lg border border-border bg-card">
         <CardHeader className="text-center">
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <div className="w-3 h-3 bg-black rounded-sm"></div>
-            <CardTitle className="text-2xl font-bold">Askus</CardTitle>
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="w-3 h-3 bg-primary rounded-sm"></div>
+            <CardTitle className="text-2xl font-bold text-foreground">Askus</CardTitle>
           </div>
-          <p className="text-gray-600">Login to your account</p>
+          <p className="text-muted-foreground">Login to your account</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -88,19 +83,19 @@ export default function LoginPage() {
                 className="w-full"
               />
             </div>
-            {formError && ( // Display form-specific error
-              <p className="text-red-500 text-sm text-center">{formError}</p>
+            {formError && (
+              <p className="text-destructive text-sm text-center">{formError}</p>
             )}
             <Button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700"
-              disabled={formLoading || authLoading} // Disable if form is submitting or auth is loading
+              className="w-full"
+              disabled={formLoading || authLoading}
             >
-              {formLoading ? 'loging in...' : 'Login'}
+              {formLoading ? 'Logging in...' : 'Login'}
             </Button>
           </form>
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

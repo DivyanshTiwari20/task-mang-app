@@ -1,4 +1,4 @@
-// app/api/employee/profile/[id]/route.ts
+// / 1. app/api/employee/profile/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
@@ -7,38 +7,63 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Await params before accessing its properties
-    const { id } = await params
-
-    const { data, error } = await supabase
-      .from('users') // Changed from 'employees' to 'users'
-      .select(`
-        id,
-        fullname,
-        email,
-        phone,
-        address,
-        profile_image,
-        gender,
-        employee_id,
-        department,
-        position,
-        manager,
-        join_date,
-        salary
-      `)
-      .eq('id', id)
+    const { id } = await params 
+    const userId = parseInt(id)
+    
+    if (isNaN(userId)) {
+      return NextResponse.json(
+        { error: 'Invalid user ID' },
+        { status: 400 }
+      )
+    }
+    
+    // Fetch user profile data with *
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
       .single()
 
-    if (error) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+    if (userError) {
+      console.error('Supabase error:', userError)
+      return NextResponse.json(
+        { error: 'Failed to fetch user profile' },
+        { status: 500 }
+      )
     }
 
-    return NextResponse.json({ profile: data })
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    // Get department name separately
+    let departmentName = 'Unknown Department'
+    if (user.department_id) {
+      const { data: department } = await supabase
+        .from('departments')
+        .select('name')
+        .eq('id', user.department_id)
+        .single()
+      
+      if (department) {
+        departmentName = department.name
+      }
+    }
+
+    // Add department name to user data
+    const userWithDepartment = {
+      ...user,
+      department_name: departmentName
+    }
+
+    return NextResponse.json(userWithDepartment)
   } catch (error) {
-    console.error('Error fetching profile:', error)
+    console.error('Error fetching user profile:', error)
     return NextResponse.json(
-      { error: 'Internal server error' }, 
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

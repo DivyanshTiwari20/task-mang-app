@@ -1,9 +1,9 @@
-//hi
 // src/app/page.tsx 
 'use client'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
+import RoleBasedAlert from '@/components/RoleBasedAlert'
 
 export default function Home() {  
   const { user, loading } = useAuth()
@@ -36,9 +36,16 @@ export default function Home() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Loading...</div>
+        {/* Show alert even during loading if user data is available */}
+        {user && <RoleBasedAlert userRole={user.role} userName={user.full_name} />}
       </div>
     )
   }
 
-  return null
+  return (
+    <>
+      {/* Alert will show before redirect happens */}
+      {user && <RoleBasedAlert userRole={user.role} userName={user.full_name} />}
+    </>
+  )
 }

@@ -28,6 +28,7 @@ export default function EmployeeDashboard() {
       fetchMonthlyAttendance()
       fetchTasks()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   const fetchMonthlyAttendance = async () => {
@@ -74,16 +75,19 @@ export default function EmployeeDashboard() {
   if (!user) return null
 
   return (
-    <div className="min-h-screen bg-gray-50">
-
+    <div className="min-h-screen bg-slate-50">
       <div className="max-w-6xl mx-auto p-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Welcome back, {user.full_name}</p>
+        {/* Header Section */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-800 mb-2">Dashboard</h1>
+          <p className="text-slate-600 text-lg">Welcome back, {user.full_name}</p>
         </div>
-        <EmployeeCards />
-        <Tasks />
-
+        
+        {/* Main Content Grid */}
+        <div className="space-y-8">
+          <EmployeeCards />
+          <Tasks />
+        </div>
       </div>
     </div>
   )

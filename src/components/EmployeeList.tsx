@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import AssignTaskSheet from '@/components/AssignTaskSheet'
 import type { CustomUser } from '@/lib/auth'
+import Link from 'next/link'
 
 interface EmployeeListProps {
   showAssignTask?: boolean
@@ -224,9 +225,10 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
               </Avatar>
 
               <div>
-                <div className="font-medium text-card-foreground">
+                <Link href={`/pages/profile/${employee.id}`} className="text-card-foreground">{employee.full_name}</Link>
+                {/* <div className="font-medium text-card-foreground">
                   {employee.full_name}
-                </div>
+                </div> */}
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <span>{employee.department?.name}</span>
                   <span>•</span>

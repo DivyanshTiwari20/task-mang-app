@@ -1,10 +1,10 @@
 // src/components/Sidebar.tsx
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useAuth } from '@/lib/auth'  // your actual auth hook
+import { useAuth } from '@/lib/auth'
 import {
   LayoutDashboard,
   Users,
@@ -27,6 +27,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarFooter,
+  SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { ModeToggle } from './ModeToggle'
 import Image from 'next/image'
@@ -67,28 +68,9 @@ function SidebarItem({ href, label, icon: Icon, isActive }: SidebarItemProps) {
 }
 
 export default function AppSidebar() {
-  const [isExpanded, setIsExpanded] = useState(true)
-  const [isMobile, setIsMobile] = useState(false)
   const { user, logout } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
-
-  // Check screen size and set mobile state
-  useEffect(() => {
-    const checkScreenSize = () => {
-      const mobile = window.innerWidth < 1024 // lg breakpoint
-      setIsMobile(mobile)
-      if (mobile) {
-        setIsExpanded(false) // Always collapsed on mobile/tablet
-      } else {
-        setIsExpanded(true) // Expanded by default on desktop
-      }
-    }
-
-    checkScreenSize()
-    window.addEventListener('resize', checkScreenSize)
-    return () => window.removeEventListener('resize', checkScreenSize)
-  }, [])
 
   if (!user) return null
 
@@ -100,10 +82,13 @@ export default function AppSidebar() {
     router.push('/login')
   }
 
-  const effectiveExpanded = isMobile ? false : isExpanded
+  // Profile link path
+  const profileHref = `/pages/profile/${user.id}`
 
   return (
     <Sidebar>
+      {/* SidebarTrigger button from shadcn sidebar */}
+      <SidebarTrigger className="absolute top-4 right-[-18px] z-20" aria-label="Toggle sidebar" />
       <SidebarContent>
         {/* Navigation Links */}
         <SidebarGroup>
@@ -145,9 +130,20 @@ export default function AppSidebar() {
         )}
       </SidebarContent>
       <ModeToggle />
-      {/* Logout Button */}
+      {/* Profile and Logout Button */}
       <SidebarFooter>
         <SidebarMenu>
+          {/* Profile link at the bottom */}
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname === profileHref}>
+              <Link href={profileHref} className="flex items-center gap-2">
+                <User />
+                <span className='text-base'>Profile</span>
+                {/* Optionally show user name/email */}
+                {/* <span className="ml-2 text-xs text-muted-foreground">{user.full_name || user.username}</span> */}
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={handleLogout}>
               <LogOut />
