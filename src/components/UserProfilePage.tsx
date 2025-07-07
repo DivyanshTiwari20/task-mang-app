@@ -6,8 +6,10 @@ import { useAuth } from '@/lib/auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Loader2, User, Calendar, CheckCircle, DollarSign, Clock, Target, AlertCircle } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ArrowLeft, Loader2, User, Calendar, Clock, AlertCircle, Mail, Phone, MapPin, Building } from 'lucide-react'
 import { toast } from 'sonner'
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 
 // Updated types for raw data
 interface UserProfile {
@@ -19,6 +21,8 @@ interface UserProfile {
   department_id: number
   department_name: string
   salary: number
+  phone?: string
+  location?: string
   created_at?: string
   // All user fields with *
   [key: string]: any
@@ -36,17 +40,7 @@ interface AttendanceRecord {
   [key: string]: any
 }
 
-interface TaskRecord {
-  id: number
-  assignee_id: number
-  title: string
-  description: string
-  status: string
-  due_date: string
-  created_at: string
-  // All task fields with *
-  [key: string]: any
-}
+const COLORS = ['#10b981', '#ef4444', '#f59e0b', '#3b82f6']
 
 export default function UserProfilePage() {
   const { id } = useParams()
@@ -56,7 +50,6 @@ export default function UserProfilePage() {
   // State management for raw data
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([])
-  const [taskRecords, setTaskRecords] = useState<TaskRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -82,40 +75,44 @@ export default function UserProfilePage() {
     
     const totalDays = attendanceRecords.length
     const presentDays = attendanceRecords.filter(record => record.checkin).length
+    const absentDays = totalDays - presentDays
     const percentage = Math.round((presentDays / totalDays) * 100)
+    
+    // Calculate working hours
+    const totalHours = attendanceRecords.reduce((acc, record) => {
+      if (record.checkin && record.checkout) {
+        const checkinTime = new Date(record.checkin).getTime()
+        const checkoutTime = new Date(record.checkout).getTime()
+        const hours = (checkoutTime - checkinTime) / (1000 * 60 * 60)
+        return acc + hours
+      }
+      return acc
+    }, 0)
+
+    // Prepare chart data
+    const pieChartData = [
+      { name: 'Present', value: presentDays, color: '#10b981' },
+      { name: 'Absent', value: absentDays, color: '#ef4444' }
+    ]
+
+    // Prepare daily attendance data for bar chart (last 7 days)
+    const last7Days = attendanceRecords.slice(-7).map(record => ({
+      date: new Date(record.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      hours: record.checkin && record.checkout ? 
+        Math.round(((new Date(record.checkout).getTime() - new Date(record.checkin).getTime()) / (1000 * 60 * 60)) * 10) / 10 : 0,
+      status: record.checkin ? 'Present' : 'Absent'
+    }))
     
     return {
       total_days: totalDays,
       present_days: presentDays,
+      absent_days: absentDays,
       attendance_percentage: percentage,
-      recent_records: attendanceRecords.slice(0, 5)
-    }
-  }
-
-  const calculateTaskStats = () => {
-    if (!taskRecords.length) return null
-    
-    const total = taskRecords.length
-    const completed = taskRecords.filter(task => task.status === 'completed').length
-    const pending = taskRecords.filter(task => task.status === 'pending').length
-    const inProgress = taskRecords.filter(task => task.status === 'in_progress').length
-    
-    const currentDate = new Date()
-    const overdue = taskRecords.filter(task => {
-      const dueDate = new Date(task.due_date)
-      return task.status !== 'completed' && dueDate < currentDate
-    }).length
-    
-    const completionPercentage = total > 0 ? Math.round((completed / total) * 100) : 0
-    
-    return {
-      total_tasks: total,
-      completed_tasks: completed,
-      pending_tasks: pending,
-      in_progress_tasks: inProgress,
-      overdue_tasks: overdue,
-      completion_percentage: completionPercentage,
-      recent_tasks: taskRecords.slice(0, 5)
+      total_hours: Math.round(totalHours * 10) / 10,
+      average_hours: Math.round((totalHours / presentDays) * 10) / 10 || 0,
+      recent_records: attendanceRecords.slice(0, 10),
+      pieChartData,
+      barChartData: last7Days
     }
   }
 
@@ -143,13 +140,6 @@ export default function UserProfilePage() {
       if (attendanceResponse.ok) {
         const attendance = await attendanceResponse.json()
         setAttendanceRecords(attendance)
-      }
-
-      // Fetch task records
-      const taskResponse = await fetch(`/api/employee/tasks/${id}`)
-      if (taskResponse.ok) {
-        const tasks = await taskResponse.json()
-        setTaskRecords(tasks)
       }
 
     } catch (err) {
@@ -192,7 +182,6 @@ export default function UserProfilePage() {
   }
 
   const attendanceStats = calculateAttendanceStats()
-  const taskStats = calculateTaskStats()
 
   return (
     <div className="min-h-screen bg-background">
@@ -208,165 +197,246 @@ export default function UserProfilePage() {
             <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Employee Profile</h1>
-            <p className="text-muted-foreground">View detailed employee information</p>
+        </div>
+
+        {/* User Profile Header */}
+        {userProfile && (
+          <div className="flex items-center gap-6 mb-8">
+            <div className="h-20 w-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
+              {userProfile.full_name.split(' ').map(n => n[0]).join('')}
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-3xl font-bold">{userProfile.full_name}</h1>
+                <Button variant="outline" size="sm">Edit</Button>
+              </div>
+              <p className="text-muted-foreground text-lg">{userProfile.role === 'leader' ? 'Product Manager' : userProfile.role}</p>
+              <p className="text-sm text-muted-foreground">
+                Joined on {userProfile.created_at ? new Date(userProfile.created_at).toLocaleDateString('en-US', { 
+                  month: 'short', day: 'numeric', year: 'numeric' 
+                }) : 'N/A'}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
-        <div className="space-y-8">
-          {/* User Information Card */}
-          {userProfile && (
-            <Card className="border-2">
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-                    <User className="h-8 w-8 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-2xl">{userProfile.full_name}</CardTitle>
-                    <p className="text-muted-foreground">@{userProfile.username}</p>
-                  </div>
-                  <Badge variant={userProfile.role === 'admin' ? 'destructive' : userProfile.role === 'leader' ? 'default' : 'secondary'}>
-                    {userProfile.role.toUpperCase()}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Email</p>
-                    <p className="font-medium">{userProfile.email}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Department</p>
-                    <p className="font-medium">{userProfile.department_name}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Employee ID</p>
-                    <p className="font-medium">#{userProfile.id}</p>
-                  </div>
-                  {canViewSalary() && (
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground">Salary</p>
-                      <p className="font-medium text-green-600 dark:text-green-400">
-                        ${userProfile.salary?.toLocaleString() || 'N/A'}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+        {/* Navigation Tabs */}
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="attendance">Attendance</TabsTrigger>
+            <TabsTrigger value="salary">Salary</TabsTrigger>
+          </TabsList>
 
-          {/* Attendance Section */}
-          {attendanceStats && (
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Attendance Overview
-                </CardTitle>
+                <CardTitle>About</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <p className="text-2xl font-bold text-primary">{attendanceStats.attendance_percentage}%</p>
-                    <p className="text-sm text-muted-foreground">Attendance Rate</p>
-                  </div>
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <p className="text-2xl font-bold text-green-600">{attendanceStats.present_days}</p>
-                    <p className="text-sm text-muted-foreground">Present Days</p>
-                  </div>
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <p className="text-2xl font-bold">{attendanceStats.total_days}</p>
-                    <p className="text-sm text-muted-foreground">Total Days</p>
-                  </div>
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <p className="text-2xl font-bold text-red-600">{attendanceStats.total_days - attendanceStats.present_days}</p>
-                    <p className="text-sm text-muted-foreground">Absent Days</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <h4 className="font-semibold">Recent Attendance</h4>
-                  {attendanceStats.recent_records.map((record) => (
-                    <div key={record.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{new Date(record.date).toLocaleDateString()}</span>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm">
-                        <span className="text-green-600">In: {record.checkin ? new Date(record.checkin).toLocaleTimeString() : 'N/A'}</span>
-                        <span className="text-red-600">Out: {record.checkout ? new Date(record.checkout).toLocaleTimeString() : 'N/A'}</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <Building className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Department</p>
+                        <p className="font-medium">{userProfile?.department_name}</p>
                       </div>
                     </div>
-                  ))}
+                    <div className="flex items-center gap-3">
+                      <Badge variant="secondary" className="text-sm">
+                        {userProfile?.role?.toUpperCase()}
+                      </Badge>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Role</p>
+                        <p className="font-medium">{userProfile?.role === 'leader' ? 'Product Manager' : userProfile?.role}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Email</p>
+                        <p className="font-medium">{userProfile?.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Phone</p>
+                        <p className="font-medium">{userProfile?.phone || '+1-555-123-4567'}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Location</p>
+                        <p className="font-medium">{userProfile?.location || 'New York, NY'}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          )}
+          </TabsContent>
 
-          {/* Tasks Section */}
-          {taskStats && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5" />
-                  Task Overview
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <p className="text-2xl font-bold text-primary">{taskStats.completion_percentage}%</p>
-                    <p className="text-sm text-muted-foreground">Completion Rate</p>
-                  </div>
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <p className="text-2xl font-bold">{taskStats.total_tasks}</p>
-                    <p className="text-sm text-muted-foreground">Total Tasks</p>
-                  </div>
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <p className="text-2xl font-bold text-green-600">{taskStats.completed_tasks}</p>
-                    <p className="text-sm text-muted-foreground">Completed</p>
-                  </div>
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <p className="text-2xl font-bold text-blue-600">{taskStats.in_progress_tasks}</p>
-                    <p className="text-sm text-muted-foreground">In Progress</p>
-                  </div>
-                  <div className="text-center p-4 bg-muted/50 rounded-lg">
-                    <p className="text-2xl font-bold text-red-600">{taskStats.overdue_tasks}</p>
-                    <p className="text-sm text-muted-foreground">Overdue</p>
-                  </div>
+          {/* Attendance Tab */}
+          <TabsContent value="attendance" className="space-y-6">
+            {attendanceStats && (
+              <>
+                {/* Attendance Statistics Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="text-center">
+                        <p className="text-3xl font-bold text-primary">{attendanceStats.attendance_percentage}%</p>
+                        <p className="text-sm text-muted-foreground">Attendance Rate</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="text-center">
+                        <p className="text-3xl font-bold text-green-600">{attendanceStats.present_days}</p>
+                        <p className="text-sm text-muted-foreground">Present Days</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="text-center">
+                        <p className="text-3xl font-bold text-blue-600">{attendanceStats.total_hours}</p>
+                        <p className="text-sm text-muted-foreground">Total Hours</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="text-center">
+                        <p className="text-3xl font-bold text-orange-600">{attendanceStats.average_hours}</p>
+                        <p className="text-sm text-muted-foreground">Avg Hours/Day</p>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
 
-                <div className="space-y-3">
-                  <h4 className="font-semibold">Recent Tasks</h4>
-                  {taskStats.recent_tasks.map((task) => (
-                    <div key={task.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                      <div className="flex-1">
-                        <p className="font-medium">{task.title}</p>
-                        <p className="text-sm text-muted-foreground">{task.description}</p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Badge variant={
-                          task.status === 'completed' ? 'default' : 
-                          task.status === 'in_progress' ? 'secondary' : 
-                          'destructive'
-                        }>
-                          {task.status.replace('_', ' ')}
-                        </Badge>
-                        <span className="text-sm text-muted-foreground">
-                          Due: {new Date(task.due_date).toLocaleDateString()}
-                        </span>
-                      </div>
+                {/* Charts */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Attendance Overview</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                          <Pie
+                            data={attendanceStats.pieChartData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, value, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {attendanceStats.pieChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Daily Hours (Last 7 Days)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={attendanceStats.barChartData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="date" />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar dataKey="hours" fill="#3b82f6" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Attendance Table */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Attendance History</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left p-3 font-medium">Date</th>
+                            <th className="text-left p-3 font-medium">Status</th>
+                            <th className="text-left p-3 font-medium">Hours</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {attendanceStats.recent_records.map((record) => (
+                            <tr key={record.id} className="border-b">
+                              <td className="p-3">{new Date(record.date).toLocaleDateString()}</td>
+                              <td className="p-3">
+                                <Badge variant={record.checkin ? 'default' : 'destructive'}>
+                                  {record.checkin ? 'Present' : 'Absent'}
+                                </Badge>
+                              </td>
+                              <td className="p-3">
+                                {record.checkin && record.checkout ? 
+                                  Math.round(((new Date(record.checkout).getTime() - new Date(record.checkin).getTime()) / (1000 * 60 * 60)) * 10) / 10 : 
+                                  0
+                                }
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </TabsContent>
+
+          {/* Salary Tab */}
+          <TabsContent value="salary" className="space-y-6">
+            {canViewSalary() && userProfile && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Salary Information</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center p-8">
+                    <p className="text-4xl font-bold text-green-600 mb-2">
+                      ${userProfile.salary?.toLocaleString() || 'N/A'}
+                    </p>
+                    <p className="text-muted-foreground">Annual Salary</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {!canViewSalary() && (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">You don't have permission to view salary information.</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )
