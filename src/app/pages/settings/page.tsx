@@ -59,6 +59,7 @@ export default function EmployeeProfilePage() {
   // Load profile data on component mount
   useEffect(() => {
     loadProfile()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadProfile = async () => {
@@ -66,7 +67,26 @@ export default function EmployeeProfilePage() {
       const response = await fetch(`/api/employee/profile/${user?.id}`)
       if (response.ok) {
         const data = await response.json()
-        setProfile(data.profile)
+        // Defensive: ensure data.profile is defined and has required fields
+        if (data && data.profile) {
+          setProfile((prev) => ({
+            ...prev,
+            ...data.profile,
+            // fallback for missing fields
+            profile_image: data.profile.profile_image ?? '',
+            fullname: data.profile.fullname ?? '',
+            email: data.profile.email ?? prev.email,
+            phone: data.profile.phone ?? '',
+            address: data.profile.address ?? '',
+            gender: data.profile.gender ?? 'male',
+            employee_id: data.profile.employee_id,
+            department: data.profile.department,
+            position: data.profile.position,
+            manager: data.profile.manager,
+            join_date: data.profile.join_date,
+            salary: data.profile.salary,
+          }))
+        }
       }
     } catch (error) {
       console.error('Error loading profile:', error)
@@ -121,7 +141,7 @@ export default function EmployeeProfilePage() {
 
       if (response.ok) {
         const data = await response.json()
-        setProfile(prev => ({ ...prev, profile_image: data.imageUrl }))
+        setProfile(prev => ({ ...prev, profile_image: data.imageUrl ?? '' }))
         setHasChanges(true)
         setMessage({ type: 'success', text: 'Profile picture updated!' })
       } else {
@@ -217,7 +237,7 @@ export default function EmployeeProfilePage() {
                 <div className="relative inline-block">
                   <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden border-4 border-border mx-auto mb-4">
                     <img
-                      src={profile.profile_image || getDefaultAvatar(profile.gender)}
+                      src={(profile && profile.profile_image) ? profile.profile_image : getDefaultAvatar(profile?.gender ?? 'male')}
                       alt="Profile"
                       className="w-full h-full object-cover"
                     />
