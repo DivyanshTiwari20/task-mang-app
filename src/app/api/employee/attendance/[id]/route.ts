@@ -19,7 +19,7 @@ export async function GET(
     
     // Fetch ALL attendance records for the user with *
     const { data: attendanceRecords, error } = await supabase
-      .from('attendence')
+      .from('attendance')
       .select('*')
       .eq('user_id', userId)
       .order('date', { ascending: false })

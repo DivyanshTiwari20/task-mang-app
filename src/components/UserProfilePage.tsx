@@ -7,9 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ArrowLeft, Loader2, User, Calendar, Clock, AlertCircle, Mail, Phone, MapPin, Building } from 'lucide-react'
+import { ArrowLeft, Loader2, AlertCircle, Mail, Phone, MapPin, Building } from 'lucide-react'
 import { toast } from 'sonner'
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
 
 // Updated types for raw data
 interface UserProfile {
@@ -24,36 +24,41 @@ interface UserProfile {
   phone?: string
   location?: string
   created_at?: string
-  // All user fields with *
   [key: string]: any
 }
 
 interface AttendanceRecord {
   id: number
   user_id: number
-  checkin: string
-  checkout: string
+  check_in: string | null
+  check_out: string | null
   date: string
   cycle_start_date: string
   cycle_end_date: string
-  // All attendance fields with *
   [key: string]: any
 }
 
 const COLORS = ['#10b981', '#ef4444', '#f59e0b', '#3b82f6']
 
+// Helper function to format salary in INR
+function formatINR(amount: number | undefined): string {
+  if (typeof amount !== 'number' || isNaN(amount)) return 'N/A'
+  return amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })
+}
+
 export default function UserProfilePage() {
-  const { id } = useParams()
+  const params = useParams()
+  const id = typeof params?.id === 'string' ? params.id : Array.isArray(params?.id) ? params.id[0] : undefined
   const router = useRouter()
   const { user } = useAuth()
-  
-  // State management for raw data
+
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [attendanceError, setAttendanceError] = useState<string | null>(null)
 
-  // Permission checks - now takes userProfile as parameter
+  // Permission checks
   const canViewProfile = (targetUserId: number, targetUserProfile: UserProfile | null): boolean => {
     if (!user) return false
     if (user.role === 'admin') return true
@@ -69,25 +74,83 @@ export default function UserProfilePage() {
     return user.role === 'admin' || user.id === userProfile.id
   }
 
+  // Helper function to check if a date string is valid
+  const isValidDate = (dateString: string | null): boolean => {
+    if (!dateString) return false
+    const date = new Date(dateString)
+    return !isNaN(date.getTime())
+  }
+
   // Calculate stats from raw data
   const calculateAttendanceStats = () => {
-    if (!attendanceRecords.length) return null
-    
-    const totalDays = attendanceRecords.length
-    const presentDays = attendanceRecords.filter(record => record.checkin).length
-    const absentDays = totalDays - presentDays
-    const percentage = Math.round((presentDays / totalDays) * 100)
-    
-    // Calculate working hours
+    console.log('Calculating attendance stats for records:', attendanceRecords)
+
+    if (!attendanceRecords || attendanceRecords.length === 0) {
+      console.log('No attendance records found')
+      return null
+    }
+
+    // Get cycle dates from the first record (assuming all records have same cycle)
+    const firstRecord = attendanceRecords[0]
+    const cycleStartDate = new Date(firstRecord.cycle_start_date)
+    const cycleEndDate = new Date(firstRecord.cycle_end_date)
+    const today = new Date()
+
+    // Use today if cycle hasn't ended yet, otherwise use cycle end date
+    const effectiveEndDate = today < cycleEndDate ? today : cycleEndDate
+
+    console.log('Cycle start:', cycleStartDate.toDateString())
+    console.log('Cycle end:', cycleEndDate.toDateString())
+    console.log('Effective end:', effectiveEndDate.toDateString())
+
+    // Helper function to calculate working days (excluding Sundays)
+    const calculateWorkingDays = (startDate: Date, endDate: Date): number => {
+      let count = 0
+      const current = new Date(startDate)
+
+      while (current <= endDate) {
+        // Skip Sundays (0 = Sunday)
+        if (current.getDay() !== 0) {
+          count++
+        }
+        current.setDate(current.getDate() + 1)
+      }
+
+      return count
+    }
+    // Calculate total working days (excluding Sundays) in the cycle period
+    const totalWorkingDays = calculateWorkingDays(cycleStartDate, effectiveEndDate)
+    console.log('Total working days in cycle:', totalWorkingDays)
+
+    // Count present days from attendance records
+    const presentDays = attendanceRecords.filter(record => {
+      const hasCheckin = record.check_in && record.check_in !== '' && record.check_in !== null
+      console.log(`Record ${record.id}: check_in=${record.check_in}, hasCheckin=${hasCheckin}`)
+      return hasCheckin
+    }).length
+
+    const absentDays = totalWorkingDays - presentDays
+    const percentage = totalWorkingDays > 0 ? Math.round((presentDays / totalWorkingDays) * 100) : 0
+
+    console.log(`Present: ${presentDays}, Total Working Days: ${totalWorkingDays}, Absent: ${absentDays}, Percentage: ${percentage}%`)
+
+    // Calculate working hours (same as before)
     const totalHours = attendanceRecords.reduce((acc, record) => {
-      if (record.checkin && record.checkout) {
-        const checkinTime = new Date(record.checkin).getTime()
-        const checkoutTime = new Date(record.checkout).getTime()
-        const hours = (checkoutTime - checkinTime) / (1000 * 60 * 60)
-        return acc + hours
+      if (record.check_in && record.check_out &&
+        isValidDate(record.check_in) && isValidDate(record.check_out)) {
+        const checkinTime = new Date(record.check_in).getTime()
+        const checkoutTime = new Date(record.check_out).getTime()
+
+        if (checkoutTime > checkinTime) {
+          const hours = (checkoutTime - checkinTime) / (1000 * 60 * 60)
+          console.log(`Record ${record.id}: ${hours.toFixed(2)} hours`)
+          return acc + hours
+        }
       }
       return acc
     }, 0)
+
+    console.log('Total hours:', totalHours)
 
     // Prepare chart data
     const pieChartData = [
@@ -96,52 +159,108 @@ export default function UserProfilePage() {
     ]
 
     // Prepare daily attendance data for bar chart (last 7 days)
-    const last7Days = attendanceRecords.slice(-7).map(record => ({
-      date: new Date(record.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      hours: record.checkin && record.checkout ? 
-        Math.round(((new Date(record.checkout).getTime() - new Date(record.checkin).getTime()) / (1000 * 60 * 60)) * 10) / 10 : 0,
-      status: record.checkin ? 'Present' : 'Absent'
-    }))
-    
+    // Prepare daily attendance data for bar chart (last 7 days)
+    const sortedRecords = [...attendanceRecords].sort((a, b) =>
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    )
+    const last7Records = sortedRecords.slice(0, 7).reverse()
+
+    const barChartData = last7Records.map(record => {
+      let hours = 0
+      if (record.check_in && record.check_out &&
+        isValidDate(record.check_in) && isValidDate(record.check_out)) {
+        const checkinTime = new Date(record.check_in).getTime()
+        const checkoutTime = new Date(record.check_out).getTime()
+        if (checkoutTime > checkinTime) {
+          hours = Math.round(((checkoutTime - checkinTime) / (1000 * 60 * 60)) * 10) / 10
+        }
+      }
+
+      console.log(`Bar chart data for ${record.date}: ${hours} hours`) // Debug log
+
+      return {
+        date: new Date(record.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        hours: hours,
+        status: record.check_in ? 'Present' : 'Absent'
+      }
+    })
+
+    console.log('Bar chart data:', barChartData) // Debug log
+
+    const recent_records = sortedRecords.slice(0, 10)
+
     return {
-      total_days: totalDays,
+      total_days: totalWorkingDays, // Changed from attendanceRecords.length
       present_days: presentDays,
       absent_days: absentDays,
       attendance_percentage: percentage,
       total_hours: Math.round(totalHours * 10) / 10,
-      average_hours: Math.round((totalHours / presentDays) * 10) / 10 || 0,
-      recent_records: attendanceRecords.slice(0, 10),
+      average_hours: presentDays > 0 ? Math.round((totalHours / presentDays) * 10) / 10 : 0,
+      recent_records,
       pieChartData,
-      barChartData: last7Days
+      barChartData
     }
   }
-
   // Fetch all data
   const fetchUserProfile = async () => {
     try {
       setLoading(true)
       setError(null)
+      setAttendanceError(null)
+
+      console.log('Fetching user profile for ID:', id)
 
       // Fetch user profile first
       const userResponse = await fetch(`/api/employee/profile/${id}`)
-      if (!userResponse.ok) throw new Error('Failed to fetch user profile')
+      console.log('User response status:', userResponse.status)
+
+      if (!userResponse.ok) {
+        const errorText = await userResponse.text()
+        console.error('User profile error:', errorText)
+        throw new Error(`Failed to fetch user profile: ${userResponse.status} ${errorText}`)
+      }
+
       const userData = await userResponse.json()
-      
+      console.log('User data received:', userData)
+
       // Check permissions AFTER fetching user profile
       if (!canViewProfile(Number(id), userData)) {
         throw new Error('You do not have permission to view this profile')
       }
 
-      // Set user profile after permission check passes
       setUserProfile(userData)
 
-      // Fetch attendance records
+      // Fetch attendance records with better error handling
+      console.log('Fetching attendance records for user:', id)
       const attendanceResponse = await fetch(`/api/employee/attendance/${id}`)
-      if (attendanceResponse.ok) {
-        const attendance = await attendanceResponse.json()
-        setAttendanceRecords(attendance)
-      }
+      console.log('Attendance response status:', attendanceResponse.status)
 
+      if (attendanceResponse.ok) {
+        const attendanceData = await attendanceResponse.json()
+        console.log('Raw attendance data:', attendanceData)
+
+        // Handle different possible response formats
+        let processedAttendance = []
+
+        if (Array.isArray(attendanceData)) {
+          processedAttendance = attendanceData
+        } else if (attendanceData && Array.isArray(attendanceData.data)) {
+          processedAttendance = attendanceData.data
+        } else if (attendanceData && Array.isArray(attendanceData.records)) {
+          processedAttendance = attendanceData.records
+        } else if (attendanceData && typeof attendanceData === 'object') {
+          // Single record returned
+          processedAttendance = [attendanceData]
+        }
+
+        console.log('Processed attendance data:', processedAttendance)
+        setAttendanceRecords(processedAttendance)
+      } else {
+        const errorText = await attendanceResponse.text()
+        console.error('Attendance fetch error:', errorText)
+        setAttendanceError(`Failed to fetch attendance: ${attendanceResponse.status} ${errorText}`)
+        setAttendanceRecords([])
+      }
     } catch (err) {
       console.error('Error fetching profile:', err)
       setError(err instanceof Error ? err.message : 'Failed to load profile')
@@ -155,6 +274,7 @@ export default function UserProfilePage() {
     if (id && user) {
       fetchUserProfile()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user])
 
   if (loading) {
@@ -212,12 +332,24 @@ export default function UserProfilePage() {
               </div>
               <p className="text-muted-foreground text-lg">{userProfile.role === 'leader' ? 'Product Manager' : userProfile.role}</p>
               <p className="text-sm text-muted-foreground">
-                Joined on {userProfile.created_at ? new Date(userProfile.created_at).toLocaleDateString('en-US', { 
-                  month: 'short', day: 'numeric', year: 'numeric' 
+                Joined on {userProfile.created_at ? new Date(userProfile.created_at).toLocaleDateString('en-US', {
+                  month: 'short', day: 'numeric', year: 'numeric'
                 }) : 'N/A'}
               </p>
             </div>
           </div>
+        )}
+
+        {/* Debug Info - Remove in production */}
+        {process.env.NODE_ENV === 'development' && (
+          <Card className="mb-4 border-yellow-200 bg-yellow-50">
+            <CardContent className="p-4">
+              <p className="text-sm text-yellow-800">
+                Debug: Found {attendanceRecords.length} attendance records
+                {attendanceError && ` | Error: ${attendanceError}`}
+              </p>
+            </CardContent>
+          </Card>
         )}
 
         {/* Navigation Tabs */}
@@ -284,6 +416,17 @@ export default function UserProfilePage() {
 
           {/* Attendance Tab */}
           <TabsContent value="attendance" className="space-y-6">
+            {attendanceError && (
+              <Card className="border-yellow-200 bg-yellow-50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-yellow-600" />
+                    <p className="text-sm text-yellow-800">{attendanceError}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {attendanceStats && (
               <>
                 {/* Attendance Statistics Cards */}
@@ -291,8 +434,8 @@ export default function UserProfilePage() {
                   <Card>
                     <CardContent className="p-6">
                       <div className="text-center">
-                        <p className="text-3xl font-bold text-primary">{attendanceStats.attendance_percentage}%</p>
-                        <p className="text-sm text-muted-foreground">Attendance Rate</p>
+                        <p className="text-3xl font-bold text-purple-600">{attendanceStats.total_days}</p>
+                        <p className="text-sm text-muted-foreground">Working Days</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -323,20 +466,25 @@ export default function UserProfilePage() {
                 </div>
 
                 {/* Charts */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 gap-6">
                   <Card>
                     <CardHeader>
                       <CardTitle>Attendance Overview</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <ResponsiveContainer width="100%" height={300}>
+                      <ResponsiveContainer width="100%" height={250}>
                         <PieChart>
                           <Pie
                             data={attendanceStats.pieChartData}
                             cx="50%"
                             cy="50%"
                             labelLine={false}
-                            label={({ name, value, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            label={({ name, value }) => {
+                              const safeValue = Number(value) || 0;
+                              const total = attendanceStats.present_days + attendanceStats.absent_days;
+                              const percentage = total > 0 ? Math.round((safeValue / total) * 100) : 0;
+                              return `${name}: ${safeValue} (${percentage}%)`;
+                            }}
                             outerRadius={80}
                             fill="#8884d8"
                             dataKey="value"
@@ -345,28 +493,19 @@ export default function UserProfilePage() {
                               <Cell key={`cell-${index}`} fill={entry.color} />
                             ))}
                           </Pie>
-                          <Tooltip />
+                          <Tooltip
+                            formatter={(value, name) => {
+                              const safeValue = Number(value) || 0;
+                              const total = attendanceStats.present_days + attendanceStats.absent_days;
+                              const percentage = total > 0 ? Math.round((safeValue / total) * 100) : 0;
+                              return [`${safeValue} (${percentage}%)`, name];
+                            }}
+                          />
                         </PieChart>
                       </ResponsiveContainer>
                     </CardContent>
                   </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Daily Hours (Last 7 Days)</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={attendanceStats.barChartData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="date" />
-                          <YAxis />
-                          <Tooltip />
-                          <Bar dataKey="hours" fill="#3b82f6" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </CardContent>
-                  </Card>
+              
                 </div>
 
                 {/* Attendance Table */}
@@ -381,32 +520,55 @@ export default function UserProfilePage() {
                           <tr className="border-b">
                             <th className="text-left p-3 font-medium">Date</th>
                             <th className="text-left p-3 font-medium">Status</th>
+                            <th className="text-left p-3 font-medium">Check In</th>
+                            <th className="text-left p-3 font-medium">Check Out</th>
                             <th className="text-left p-3 font-medium">Hours</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {attendanceStats.recent_records.map((record) => (
-                            <tr key={record.id} className="border-b">
-                              <td className="p-3">{new Date(record.date).toLocaleDateString()}</td>
-                              <td className="p-3">
-                                <Badge variant={record.checkin ? 'default' : 'destructive'}>
-                                  {record.checkin ? 'Present' : 'Absent'}
-                                </Badge>
-                              </td>
-                              <td className="p-3">
-                                {record.checkin && record.checkout ? 
-                                  Math.round(((new Date(record.checkout).getTime() - new Date(record.checkin).getTime()) / (1000 * 60 * 60)) * 10) / 10 : 
-                                  0
-                                }
-                              </td>
-                            </tr>
-                          ))}
+                          {attendanceStats.recent_records.map((record) => {
+                            let hours = 0
+                            if (record.check_in && record.check_out &&
+                              isValidDate(record.check_in) && isValidDate(record.check_out)) {
+                              const checkinTime = new Date(record.check_in).getTime()
+                              const checkoutTime = new Date(record.check_out).getTime()
+                              if (checkoutTime > checkinTime) {
+                                hours = Math.round(((checkoutTime - checkinTime) / (1000 * 60 * 60)) * 10) / 10
+                              }
+                            }
+                            return (
+                              <tr key={record.id} className="border-b">
+                                <td className="p-3">{new Date(record.date).toLocaleDateString()}</td>
+                                <td className="p-3">
+                                  <Badge variant={record.check_in ? 'default' : 'destructive'}>
+                                    {record.check_in ? 'Present' : 'Absent'}
+                                  </Badge>
+                                </td>
+                                <td className="p-3">
+                                  {record.check_in ? new Date(record.check_in).toLocaleTimeString() : 'N/A'}
+                                </td>
+                                <td className="p-3">
+                                  {record.check_out ? new Date(record.check_out).toLocaleTimeString() : 'N/A'}
+                                </td>
+                                <td className="p-3">{hours || 'N/A'}</td>
+                              </tr>
+                            )
+                          })}
                         </tbody>
                       </table>
                     </div>
                   </CardContent>
                 </Card>
               </>
+            )}
+
+            {!attendanceStats && !attendanceError && (
+              <Card>
+                <CardContent className="p-6 text-center">
+                  <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No attendance data available.</p>
+                </CardContent>
+              </Card>
             )}
           </TabsContent>
 
@@ -420,7 +582,7 @@ export default function UserProfilePage() {
                 <CardContent>
                   <div className="text-center p-8">
                     <p className="text-4xl font-bold text-green-600 mb-2">
-                      ${userProfile.salary?.toLocaleString() || 'N/A'}
+                      {formatINR(userProfile.salary)}
                     </p>
                     <p className="text-muted-foreground">Annual Salary</p>
                   </div>

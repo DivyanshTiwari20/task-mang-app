@@ -5,37 +5,37 @@
 
 @layer base {
   :root {
-    /* Light mode - warm yellowish tones */
-    --background: 48 15% 97%;
+    /* Light mode - strong yellowish tones */
+    --background: 48 80% 92%;
     --foreground: 222.2 84% 4.9%;
-    --card: 48 20% 98%;
+    --card: 48 35% 94%;
     --card-foreground: 222.2 84% 4.9%;
-    --popover: 48 20% 98%;
+    --popover: 48 35% 94%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 45 93% 47%;
+    --primary: 45 85% 50%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 47 25% 95%;
+    --secondary: 45 35% 88%;
     --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 47 25% 95%;
+    --muted: 45 35% 88%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 47 25% 95%;
+    --accent: 45 35% 88%;
     --accent-foreground: 222.2 84% 4.9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 45 20% 89%;
-    --input: 45 20% 89%;
-    --ring: 45 93% 47%;
+    --border: 45 30% 82%;
+    --input: 45 30% 85%;
+    --ring: 45 85% 50%;
     --radius: 0.75rem;
     
-    /* Sidebar with subtle elevation and warm tones */
-    --sidebar-background: 48 25% 96%;
+    /* Sidebar with strong yellowish tones */
+    --sidebar-background: 48 45% 88%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 45 85% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 47 30% 92%;
+    --sidebar-accent: 45 40% 85%;
     --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 45 25% 87%;
-    --sidebar-ring: 45 93% 47%;
+    --sidebar-border: 45 35% 80%;
+    --sidebar-ring: 45 85% 50%;
   }
 
   .dark {
