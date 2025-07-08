@@ -1,6 +1,6 @@
     // app/profile/[id]/page.tsx
     import UserProfilePage from '@/components/UserProfilePage'
-
+    import { useParams } from 'next/navigation'
     export default function ProfilePage() {
     return <UserProfilePage />
     }

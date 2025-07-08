@@ -11,6 +11,7 @@ import { ArrowLeft, Loader2, AlertCircle, Mail, Phone, MapPin, Building } from '
 import { toast } from 'sonner'
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
 import UserTasks from '@/components/UserProfile/UserTasks'
+import LeaveManagement from '@/components/LeaveManagement'
 
 // import Tasks from '@/components/Tasks' // TODO: Uncomment when Tasks component is ready
         
@@ -329,6 +330,7 @@ const recent_records = sortedRecords
             <div className="h-20 w-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
               {userProfile.full_name.split(' ').map(n => n[0]).join('')}
             </div>
+            {/* <LeaveManagement /> */}
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-3xl font-bold">{userProfile.full_name}</h1>

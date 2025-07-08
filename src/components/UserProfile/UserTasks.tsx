@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -31,6 +32,7 @@ interface UserTasksProps {
 
 export default function UserTasks({ userId, userProfile }: UserTasksProps) {
   const { user } = useAuth()
+  const router = useRouter()
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -219,8 +221,18 @@ export default function UserTasks({ userId, userProfile }: UserTasksProps) {
                 {tasks.map((task) => (
                   <tr key={task.id} className="border-b hover:bg-muted">
                     <td className="p-3">
-                      <div>
-                        <p className="font-medium">{task.title}</p>
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        className="cursor-pointer"
+                        onClick={() => router.push(`/pages/task-detail/${task.id}`)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            router.push(`/pages/task-detail/${task.id}`)
+                          }
+                        }}
+                      >
+                        <p className="font-medium text-primary hover:underline">{task.title}</p>
                         <p className="text-sm text-muted-foreground truncate max-w-xs">
                           {task.description}
                         </p>
@@ -255,8 +267,7 @@ export default function UserTasks({ userId, userProfile }: UserTasksProps) {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            // You can implement view details logic here
-                            console.log('View task details:', task.id)
+                            router.push(`/pages/task-detail/${task.id}`)
                           }}
                         >
                           <Eye className="h-4 w-4" />

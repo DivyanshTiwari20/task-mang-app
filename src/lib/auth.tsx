@@ -10,6 +10,9 @@ export interface CustomUser {
   full_name: string;
   role: 'admin' | 'leader' | 'employee';
   department_id: number | null;
+  salary: number;
+  leave_taken: number;
+  department_name?: string;
 }
   
 interface AuthContextType {

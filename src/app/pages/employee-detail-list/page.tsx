@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -29,13 +30,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { 
-  Search, 
-  Filter, 
-  Download, 
-  Plus, 
-  Trash2, 
-  Edit, 
+import {
+  Search,
+  Filter,
+  Download,
+  Plus,
+  Trash2,
+  Edit,
   MoreHorizontal,
   ChevronLeft,
   ChevronRight,
@@ -81,7 +82,8 @@ interface Department {
   name: string
 }
 
-type SortField = 'full_name' | 'email' | 'role' | 'department' | 'position' | 'join_date' | 'created_at'
+// Remove 'join_date' from SortField type
+type SortField = 'full_name' | 'email' | 'role' | 'department' | 'position' | 'created_at'
 type SortDirection = 'asc' | 'desc' | null
 
 export default function EmployeeTablePage() {
@@ -98,6 +100,8 @@ export default function EmployeeTablePage() {
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [sortField, setSortField] = useState<SortField>('full_name')
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+
+  const router = useRouter()
 
   const getDefaultAvatar = (gender?: string) => {
     switch (gender) {
@@ -209,14 +213,14 @@ export default function EmployeeTablePage() {
 
   useEffect(() => {
     let filtered = employees.filter(emp => {
-      const matchesSearch = 
+      const matchesSearch =
         emp.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         emp.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         emp.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         emp.employee_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         emp.department?.name?.toLowerCase().includes(searchTerm.toLowerCase())
 
-      const matchesDepartment = selectedDepartment === 'all' || 
+      const matchesDepartment = selectedDepartment === 'all' ||
         emp.department?.name === selectedDepartment
 
       const matchesRole = selectedRole === 'all' || emp.role === selectedRole
@@ -251,10 +255,7 @@ export default function EmployeeTablePage() {
             aValue = a.position || ''
             bValue = b.position || ''
             break
-          case 'join_date':
-            aValue = a.join_date || ''
-            bValue = b.join_date || ''
-            break
+          // Removed 'join_date' from sorting
           case 'created_at':
             aValue = a.created_at || ''
             bValue = b.created_at || ''
@@ -338,7 +339,7 @@ export default function EmployeeTablePage() {
   const totalPages = Math.ceil(filteredEmployees.length / rowsPerPage)
   const currentPageEmployees = getCurrentPageEmployees()
 
-  const isAllSelected = currentPageEmployees.length > 0 && 
+  const isAllSelected = currentPageEmployees.length > 0 &&
     currentPageEmployees.every(emp => selectedEmployees.has(emp.id))
 
   const isSomeSelected = currentPageEmployees.some(emp => selectedEmployees.has(emp.id))
@@ -435,7 +436,7 @@ export default function EmployeeTablePage() {
                 />
               </TableHead>
               <TableHead>Employee</TableHead>
-              <TableHead 
+              <TableHead
                 className="cursor-pointer hover:bg-muted/50"
                 onClick={() => handleSort('full_name')}
               >
@@ -444,7 +445,7 @@ export default function EmployeeTablePage() {
                   {getSortIcon('full_name')}
                 </div>
               </TableHead>
-              <TableHead 
+              <TableHead
                 className="cursor-pointer hover:bg-muted/50"
                 onClick={() => handleSort('email')}
               >
@@ -453,7 +454,7 @@ export default function EmployeeTablePage() {
                   {getSortIcon('email')}
                 </div>
               </TableHead>
-              <TableHead 
+              <TableHead
                 className="cursor-pointer hover:bg-muted/50"
                 onClick={() => handleSort('role')}
               >
@@ -462,7 +463,7 @@ export default function EmployeeTablePage() {
                   {getSortIcon('role')}
                 </div>
               </TableHead>
-              <TableHead 
+              <TableHead
                 className="cursor-pointer hover:bg-muted/50"
                 onClick={() => handleSort('department')}
               >
@@ -471,7 +472,7 @@ export default function EmployeeTablePage() {
                   {getSortIcon('department')}
                 </div>
               </TableHead>
-              <TableHead 
+              <TableHead
                 className="cursor-pointer hover:bg-muted/50"
                 onClick={() => handleSort('position')}
               >
@@ -482,15 +483,7 @@ export default function EmployeeTablePage() {
               </TableHead>
               <TableHead>Phone</TableHead>
               <TableHead>Manager</TableHead>
-              <TableHead 
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => handleSort('join_date')}
-              >
-                <div className="flex items-center">
-                  Join Date
-                  {getSortIcon('join_date')}
-                </div>
-              </TableHead>
+              {/* Removed Join Date column */}
               {/* Only show Salary column if user is admin */}
               {isAdmin && <TableHead>Salary</TableHead>}
               <TableHead>Status</TableHead>
@@ -500,8 +493,8 @@ export default function EmployeeTablePage() {
           <TableBody>
             {currentPageEmployees.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={isAdmin ? 13 : 12} className="text-center py-8 text-muted-foreground">
-                  {filteredEmployees.length === 0 
+                <TableCell colSpan={isAdmin ? 12 : 11} className="text-center py-8 text-muted-foreground">
+                  {filteredEmployees.length === 0
                     ? "No employees found or you do not have permission to view this list."
                     : "No employees match your search criteria."
                   }
@@ -513,7 +506,7 @@ export default function EmployeeTablePage() {
                   <TableCell>
                     <Checkbox
                       checked={selectedEmployees.has(employee.id)}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         handleSelectEmployee(employee.id, checked as boolean)
                       }
                       aria-label={`Select ${employee.full_name}`}
@@ -521,28 +514,61 @@ export default function EmployeeTablePage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          <img
-                            src={employee.profile_image || getDefaultAvatar(employee.gender)}
-                            alt={`${employee.full_name} avatar`}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.src = getDefaultAvatar(employee.gender)
-                            }}
-                          />
-                        </AvatarFallback>
-                      </Avatar>
+                      <div
+                        className="cursor-pointer"
+                        tabIndex={0}
+                        role="button"
+                        aria-label={`View profile of ${employee.username || 'EMPTY'}`}
+                        onClick={() => router.push(`/pages/profile/${employee.id}`)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            router.push(`/pages/profile/${employee.id}`)
+                          }
+                        }}
+                      >
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            <img
+                              src={employee.profile_image || getDefaultAvatar(employee.gender)}
+                              alt={`${employee.full_name} avatar`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = getDefaultAvatar(employee.gender)
+                              }}
+                            />
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
                       <div>
-                        <div className="font-medium">{employee.employee_id || 'EMPTY'}</div>
-                        <div className="text-sm text-muted-foreground">
+                        {/* <div className="font-medium">{employee.employee_id || 'EMPTY'}</div>   */}
+                        <div
+                          className="text-sm text-muted-foreground cursor-pointer hover:underline"
+                          onClick={() => router.push(`/pages/profile/${employee.id}`)}
+                          tabIndex={0}
+                          role="button"
+                          onKeyDown={e => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              router.push(`/pages/profile/${employee.id}`)
+                            }
+                          }}
+                          aria-label={`View profile of ${employee.username || 'EMPTY'}`}
+                        >
                           {employee.username || 'EMPTY'}
                         </div>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell className="font-medium">
-                    {employee.full_name || 'EMPTY'}
+                    {employee.full_name ? (
+                      <span
+
+                        aria-label={`View profile of ${employee.full_name}`}
+                      >
+                        {employee.full_name}
+                      </span>
+                    ) : (
+                      'EMPTY'
+                    )}
                   </TableCell>
                   <TableCell>{employee.email || 'EMPTY'}</TableCell>
                   <TableCell>
@@ -554,7 +580,7 @@ export default function EmployeeTablePage() {
                   <TableCell>{employee.position || 'EMPTY'}</TableCell>
                   <TableCell>{employee.phone || 'EMPTY'}</TableCell>
                   <TableCell>{employee.manager || 'EMPTY'}</TableCell>
-                  <TableCell>{formatDate(employee.join_date)}</TableCell>
+                  {/* Removed Join Date cell */}
                   {/* Only show Salary cell if user is admin */}
                   {isAdmin && (
                     <TableCell>{formatSalary(employee.salary)}</TableCell>
@@ -562,8 +588,8 @@ export default function EmployeeTablePage() {
                   <TableCell>
                     <Badge
                       variant={isCheckedInToday(employee.todayAttendance) ? "default" : "secondary"}
-                      className={isCheckedInToday(employee.todayAttendance) 
-                        ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400" 
+                      className={isCheckedInToday(employee.todayAttendance)
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
                         : ""
                       }
                     >
