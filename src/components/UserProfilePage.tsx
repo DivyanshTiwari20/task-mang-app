@@ -10,7 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ArrowLeft, Loader2, AlertCircle, Mail, Phone, MapPin, Building } from 'lucide-react'
 import { toast } from 'sonner'
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
+import UserTasks from '@/components/UserProfile/UserTasks'
 
+// import Tasks from '@/components/Tasks' // TODO: Uncomment when Tasks component is ready
+        
 // Updated types for raw data
 interface UserProfile {
   id: number
@@ -179,7 +182,7 @@ export default function UserProfilePage() {
       console.log(`Bar chart data for ${record.date}: ${hours} hours`) // Debug log
 
       return {
-        date: new Date(record.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        date: new Date(record.date).toLocaleDateString('en-IN', {  day: 'numeric',month: 'short' }),
         hours: hours,
         status: record.check_in ? 'Present' : 'Absent'
       }
@@ -187,7 +190,8 @@ export default function UserProfilePage() {
 
     console.log('Bar chart data:', barChartData) // Debug log
 
-    const recent_records = sortedRecords.slice(0, 10)
+   // Don't limit records here - we'll handle pagination in the component
+const recent_records = sortedRecords
 
     return {
       total_days: totalWorkingDays, // Changed from attendanceRecords.length
@@ -328,36 +332,26 @@ export default function UserProfilePage() {
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-3xl font-bold">{userProfile.full_name}</h1>
-                <Button variant="outline" size="sm">Edit</Button>
+                {/* <Button variant="outline" size="sm">Edit</Button> */}
               </div>
               <p className="text-muted-foreground text-lg">{userProfile.role === 'leader' ? 'Product Manager' : userProfile.role}</p>
               <p className="text-sm text-muted-foreground">
-                Joined on {userProfile.created_at ? new Date(userProfile.created_at).toLocaleDateString('en-US', {
-                  month: 'short', day: 'numeric', year: 'numeric'
+                Joined on {userProfile.created_at ? new Date(userProfile.created_at).toLocaleDateString('en-IN', {
+                   day: 'numeric',month: 'short', year: 'numeric'
                 }) : 'N/A'}
               </p>
             </div>
           </div>
         )}
 
-        {/* Debug Info - Remove in production */}
-        {process.env.NODE_ENV === 'development' && (
-          <Card className="mb-4 border-yellow-200 bg-yellow-50">
-            <CardContent className="p-4">
-              <p className="text-sm text-yellow-800">
-                Debug: Found {attendanceRecords.length} attendance records
-                {attendanceError && ` | Error: ${attendanceError}`}
-              </p>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Navigation Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className="grid w-full grid-cols-4 mb-8">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="attendance">Attendance</TabsTrigger>
             <TabsTrigger value="salary">Salary</TabsTrigger>
+            <TabsTrigger value="tasks">Tasks</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -538,7 +532,7 @@ export default function UserProfilePage() {
                             }
                             return (
                               <tr key={record.id} className="border-b">
-                                <td className="p-3">{new Date(record.date).toLocaleDateString()}</td>
+                                <td className="p-3">{new Date(record.date).toLocaleDateString('en-IN', {  day: 'numeric',month: 'short', year: 'numeric'  })}</td>
                                 <td className="p-3">
                                   <Badge variant={record.check_in ? 'default' : 'destructive'}>
                                     {record.check_in ? 'Present' : 'Absent'}
@@ -597,6 +591,11 @@ export default function UserProfilePage() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          {/* Tasks Tab */}
+          <TabsContent value="tasks" className="space-y-6">
+            <UserTasks userId={id ?? ''} userProfile={userProfile} />
           </TabsContent>
         </Tabs>
       </div>

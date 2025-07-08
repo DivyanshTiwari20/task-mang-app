@@ -6,13 +6,14 @@ import { useAuth } from '@/lib/auth'
 import {
   Calendar,
   User,
-  Eye,
   AlertCircle,
   Clock,
   CheckCircle2,
   Mail,
   UserCheck,
-  Filter
+  Filter,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react'
 
 // Import shadcn/ui components
@@ -95,6 +96,7 @@ const Tasks = () => {
   const [priorityFilter, setPriorityFilter] = useState<string>('all')
   const [overdueFilter, setOverdueFilter] = useState<string>('all')
   const [roleFilter, setRoleFilter] = useState<string>('assigned') // for leader role
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc') // desc = recent first
 
   // Fetch user role and department
   useEffect(() => {
@@ -140,7 +142,6 @@ const Tasks = () => {
           console.log('Admin mode - fetching all tasks')
         } else if (userRole === 'leader') {
           console.log('Leader mode - user.id:', user.id, 'type:', typeof user.id)
-          // REPLACE THE EXISTING LINE WITH:
           if (roleFilter === 'assigned') {
             query = query.eq('assigned_by_id', user.id) // tasks he assigned
           } else if (roleFilter === 'assigned_to') {
@@ -148,7 +149,7 @@ const Tasks = () => {
           }
         }
 
-        const { data: tasksData, error } = await query.order('due_date', { ascending: true })
+        const { data: tasksData, error } = await query.order('due_date', { ascending: sortOrder === 'asc' })
 
         if (error) throw error
 
@@ -178,7 +179,7 @@ const Tasks = () => {
     }
 
     fetchTasks()
-  }, [user, userRole, userDepartment, roleFilter])
+  }, [user, userRole, userDepartment, roleFilter, sortOrder])
 
   // Filter tasks based on status and priority
   useEffect(() => {
@@ -191,6 +192,7 @@ const Tasks = () => {
     if (priorityFilter !== 'all') {
       filtered = filtered.filter(task => task.priority.toLowerCase() === priorityFilter)
     }
+    
     if (overdueFilter !== 'all') {
       const now = new Date()
       if (overdueFilter === 'overdue') {
@@ -199,6 +201,18 @@ const Tasks = () => {
         filtered = filtered.filter(task => new Date(task.due_date) >= now || new Date(task.due_date).toDateString() === now.toDateString())
       }
     }
+
+    // Sort completed tasks to bottom and apply shadow effect
+    filtered = filtered.sort((a, b) => {
+      if (a.status?.toLowerCase() === 'completed' && b.status?.toLowerCase() !== 'completed') {
+        return 1
+      }
+      if (a.status?.toLowerCase() !== 'completed' && b.status?.toLowerCase() === 'completed') {
+        return -1
+      }
+      return 0
+    })
+
     setFilteredTasks(filtered)
   }, [tasks, statusFilter, priorityFilter, overdueFilter])
 
@@ -223,27 +237,16 @@ const Tasks = () => {
     return new Date(dueDate) < new Date() && new Date(dueDate).toDateString() !== new Date().toDateString()
   }
 
+  const toggleSortOrder = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+  }
+
   if (loadingTasks) {
     return (
       <div className="p-6 space-y-4">
         <div className="animate-pulse">
           <div className="h-8 bg-muted rounded w-1/4 mb-6"></div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[...Array(6)].map((_, i) => (
-              <Card key={i}>
-                <CardHeader className="pb-3">
-                  <div className="h-4 bg-muted rounded w-3/4"></div>
-                  <div className="h-3 bg-muted rounded w-1/2"></div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="h-3 bg-muted rounded"></div>
-                    <div className="h-3 bg-muted rounded w-2/3"></div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <div className="bg-muted rounded h-96"></div>
         </div>
       </div>
     )
@@ -327,101 +330,128 @@ const Tasks = () => {
         </Card>
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredTasks.map((task) => (
-              <Card key={task.id} className={`transition-all hover:shadow-md ${isOverdue(task.due_date) ? 'border-destructive/50 bg-destructive/5' : ''
-                }`}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg leading-tight line-clamp-2">
-                        {task.title}
-                      </CardTitle>
-                      {task.description && (
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                          {task.description}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <Badge variant={getPriorityVariant(task.priority)} className="text-xs">
-                        {task.priority}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="space-y-4">
-                  {/* Status */}
-                  <div className="flex items-center gap-2">
-                    <Badge variant={getStatusVariant(task.status || 'pending')} className="flex items-center gap-1">
-                      {getStatusIcon(task.status || 'pending')}
-                      {task.status || 'Pending'}
-                    </Badge>
-                  </div>
-
-                  {/* Assignee Info */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">
-                          {task.assignee_name || 'Unknown User'}
-                        </div>
-                        {task.assignee_email && (
-                          <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                            <Mail className="w-3 h-3" />
-                            {task.assignee_email}
+          {/* Table Container */}
+          <div className="rounded-lg border overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
+                      Task Details
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
+                      Assignee
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
+                      Status & Priority
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
+                      <button 
+                        onClick={toggleSortOrder}
+                        className="flex items-center gap-1 hover:text-foreground transition-colors"
+                      >
+                        Due Date
+                        {sortOrder === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </button>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTasks.map((task, index) => {
+                    const isCompleted = task.status?.toLowerCase() === 'completed'
+                    const isEven = index % 2 === 0
+                    
+                    return (
+                      <tr 
+                        key={task.id}
+                        className={`
+                          border-b transition-all hover:bg-muted/30 
+                          ${isCompleted ? 'opacity-50 shadow-sm' : ''}
+                       ${isEven ? 'bg-yellow-50 dark:bg-yellow-900/20' : 'bg-yellow-100/50 dark:bg-yellow-800/30'}
+                          ${isOverdue(task.due_date) && !isCompleted ? 'border-l-4 border-l-destructive' : ''}
+                        `}
+                      >
+                        {/* Task Details */}
+                        <td className="px-6 py-4">
+                          <div className="space-y-1">
+                            <Link 
+                              href={`/pages/task-detail/${task.id}`}
+                              className="text-sm font-medium hover:text-primary transition-colors cursor-pointer line-clamp-2"
+                            >
+                              {task.title}
+                            </Link>
+                            {task.description && (
+                              <p className="text-xs text-muted-foreground line-clamp-2 max-w-xs">
+                                {task.description}
+                              </p>
+                            )}
+                            {task.assigned_by_name && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <UserCheck className="w-3 h-3" />
+                                <span>by {task.assigned_by_name}</span>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </div>
+                        </td>
 
-                    {/* Assigned By */}
-                    {task.assigned_by_name && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <UserCheck className="w-4 h-4 flex-shrink-0" />
-                        <span className="truncate">Assigned by {task.assigned_by_name}</span>
-                      </div>
-                    )}
-                  </div>
+                        {/* Assignee */}
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium truncate">
+                                {task.assignee_name || 'Unknown User'}
+                              </div>
+                              {task.assignee_email && (
+                                <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                                  <Mail className="w-3 h-3" />
+                                  {task.assignee_email}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
 
-                  {/* Dates */}
-                  <div className="space-y-2 pt-2 border-t">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                      <div>
-                        <span className={`font-medium ${isOverdue(task.due_date) ? 'text-destructive' : ''}`}>
-                          Due: {formatDate(task.due_date)}
-                        </span>
-                        {isOverdue(task.due_date) && (
-                          <Badge variant="destructive" className="ml-2 text-xs">
-                            Overdue
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
+                        {/* Status & Priority */}
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col gap-2">
+                            <Badge variant={getStatusVariant(task.status || 'pending')} className="flex items-center gap-1 w-fit">
+                              {getStatusIcon(task.status || 'pending')}
+                              <span className="text-xs">{task.status || 'Pending'}</span>
+                            </Badge>
+                            <Badge variant={getPriorityVariant(task.priority)} className="text-xs w-fit">
+                              {task.priority}
+                            </Badge>
+                          </div>
+                        </td>
 
-                    {task.assigned_at && (
-                      <div className="text-xs text-muted-foreground">
-                        Assigned: {formatDateTime(task.assigned_at)}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="pt-2">
-
-                    <Button variant="outline" size="sm" className="w-full" asChild>
-                      <Link href={`/pages/task-detail/${task.id}`}>
-                        <Eye className="w-4 h-4 mr-2" />
-                        View Details
-                      </Link>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                        {/* Due Date */}
+                        <td className="px-6 py-4">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                              <span className={`text-sm font-medium ${isOverdue(task.due_date) && !isCompleted ? 'text-destructive' : ''}`}>
+                                {formatDate(task.due_date)}
+                              </span>
+                              {isOverdue(task.due_date) && !isCompleted && (
+                                <Badge variant="destructive" className="text-xs">
+                                  Overdue
+                                </Badge>
+                              )}
+                            </div>
+                            {task.assigned_at && (
+                              <div className="text-xs text-muted-foreground">
+                                Assigned: {formatDateTime(task.assigned_at)}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Footer Info */}
