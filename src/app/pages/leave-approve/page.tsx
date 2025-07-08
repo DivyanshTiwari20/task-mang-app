@@ -29,12 +29,10 @@ interface LeaveRequest {
   created_at: string;
   users: {
     full_name: string;
-    department_name: string;
     role: string;
     salary: number;
   };
 }
-
 // Leave Stats Component
 const LeaveStats = ({ requests, user }: { requests: LeaveRequest[]; user: any }) => {
   const getMonthCycleStart = () => {
@@ -157,7 +155,7 @@ const LeaveFilters = ({ filters, onFilterChange }: { filters: any; onFilterChang
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <Label>Status</Label>
-            <Select value={filters.status} onValueChange={(value) => onFilterChange({...filters, status: value})}>
+            <Select value={filters.status} onValueChange={(value) => onFilterChange({ ...filters, status: value })}>
               <SelectTrigger>
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
@@ -171,7 +169,7 @@ const LeaveFilters = ({ filters, onFilterChange }: { filters: any; onFilterChang
           </div>
           <div>
             <Label>Leave Type</Label>
-            <Select value={filters.type} onValueChange={(value) => onFilterChange({...filters, type: value})}>
+            <Select value={filters.type} onValueChange={(value) => onFilterChange({ ...filters, type: value })}>
               <SelectTrigger>
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
@@ -190,7 +188,7 @@ const LeaveFilters = ({ filters, onFilterChange }: { filters: any; onFilterChang
             <Input
               type="date"
               value={filters.fromDate}
-              onChange={(e) => onFilterChange({...filters, fromDate: e.target.value})}
+              onChange={(e) => onFilterChange({ ...filters, fromDate: e.target.value })}
             />
           </div>
           <div>
@@ -198,19 +196,18 @@ const LeaveFilters = ({ filters, onFilterChange }: { filters: any; onFilterChang
             <Input
               type="date"
               value={filters.toDate}
-              onChange={(e) => onFilterChange({...filters, toDate: e.target.value})}
+              onChange={(e) => onFilterChange({ ...filters, toDate: e.target.value })}
             />
           </div>
         </div>
       </CardContent>
     </Card>
   );
-};
+};  
 
 // Leave Application Form Component
 const LeaveApplicationForm = ({ onSuccess }: { onSuccess: () => void }) => {
   const { user } = useAuth();
-  if (!user) return null;
   const [formData, setFormData] = useState({
     leave_type: '',
     reason: '',
@@ -219,6 +216,9 @@ const LeaveApplicationForm = ({ onSuccess }: { onSuccess: () => void }) => {
     notes: ''
   });
   const [loading, setLoading] = useState(false);
+
+  // Move this after all hooks
+  if (!user) return <div>Loading user...</div>;
 
   const leaveTypes = ['Sick Leave', 'Vacation', 'Personal', 'Maternity', 'Paternity', 'Emergency', 'Others'];
 
@@ -257,7 +257,7 @@ const LeaveApplicationForm = ({ onSuccess }: { onSuccess: () => void }) => {
       const days = calculateDays(formData.start_date, formData.end_date);
       const currentCycleLeaves = await getMonthCycleLeaves();
       const totalLeaves = currentCycleLeaves + days;
-      
+
       const requiresAdmin = totalLeaves > 2;
       const salaryDeduction = totalLeaves > 2 ? (totalLeaves - 2) * (user.salary / 30) : 0;
 
@@ -289,7 +289,7 @@ const LeaveApplicationForm = ({ onSuccess }: { onSuccess: () => void }) => {
     <div className="space-y-4">
       <div>
         <Label>Type of Leave</Label>
-        <Select onValueChange={(value) => setFormData({...formData, leave_type: value})}>
+        <Select onValueChange={(value) => setFormData({ ...formData, leave_type: value })}>
           <SelectTrigger>
             <SelectValue placeholder="Select leave type" />
           </SelectTrigger>
@@ -305,7 +305,7 @@ const LeaveApplicationForm = ({ onSuccess }: { onSuccess: () => void }) => {
         <Label>Reason</Label>
         <Input
           value={formData.reason}
-          onChange={(e) => setFormData({...formData, reason: e.target.value})}
+          onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
           placeholder="Enter reason for leave"
         />
       </div>
@@ -316,7 +316,7 @@ const LeaveApplicationForm = ({ onSuccess }: { onSuccess: () => void }) => {
           <Input
             type="date"
             value={formData.start_date}
-            onChange={(e) => setFormData({...formData, start_date: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
           />
         </div>
         <div>
@@ -324,7 +324,7 @@ const LeaveApplicationForm = ({ onSuccess }: { onSuccess: () => void }) => {
           <Input
             type="date"
             value={formData.end_date}
-            onChange={(e) => setFormData({...formData, end_date: e.target.value})}
+            onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
           />
         </div>
       </div>
@@ -340,7 +340,7 @@ const LeaveApplicationForm = ({ onSuccess }: { onSuccess: () => void }) => {
         <Label>Additional Notes</Label>
         <Textarea
           value={formData.notes}
-          onChange={(e) => setFormData({...formData, notes: e.target.value})}
+          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
           placeholder="Any additional information"
           rows={3}
         />
@@ -479,7 +479,6 @@ const LeaveRequestCard = ({ request, onAction, canApprove }: { request: LeaveReq
 // Main Leave Page Component
 const LeavePage = () => {
   const { user } = useAuth();
-  if (!user) return null;
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -491,37 +490,53 @@ const LeavePage = () => {
   });
 
   const fetchRequests = async () => {
+    if (!user) return;
+    setLoading(true);
     try {
-      let query = supabase
+      // Debug: Check what user data we have
+      console.log('Current user:', user);
+      
+      // Debug: Get all leave requests without filtering
+      const { data: allData, error } = await supabase
+        .from('leave_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+  
+      console.log('All leave requests:', allData);
+      console.log('Query error:', error);
+  
+      if (error) throw error;
+  
+      // Debug: Try with users join
+      const { data: withUsers, error: userError } = await supabase
         .from('leave_requests')
         .select(`
           *,
-          users (full_name, department_name, role, salary)
+          users!leave_requests_user_id_fkey (full_name, role, salary)
         `)
         .order('created_at', { ascending: false });
-
-      // Role-based filtering
-      if (user.role === 'employee') {
-        query = query.eq('user_id', user.id);
-      } else if (user.role === 'leader') {
-        query = query.or(`user_id.eq.${user.id},users.department_name.eq.${user.department_name}`);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      setRequests(data || []);
+  
+      console.log('With users join:', withUsers);
+      console.log('Users join error:', userError);
+  
+      setRequests(withUsers || []);
     } catch (error) {
       console.error('Error fetching leave requests:', error);
+      setRequests([]);
     } finally {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchRequests();
   }, [user]);
+  if (!user) {
+    return <div className="p-4">Loading user...</div>;
+  }
 
+  if (loading) {
+    return <div className="p-4">Loading...</div>;
+  }
   const filteredRequests = requests.filter(request => {
     if (filters.status !== 'all' && request.status !== filters.status) return false;
     if (filters.type !== 'all' && request.leave_type !== filters.type) return false;
@@ -531,11 +546,10 @@ const LeavePage = () => {
   });
 
   const canApprove = (request: LeaveRequest) => {
-    if (user.role === 'admin') return request.requires_admin;
+    if (user.role === 'admin') return true; // Admin can approve all
     if (user.role === 'leader') return !request.requires_admin && request.user_id !== user.id;
     return false;
   };
-
   const myRequests = filteredRequests.filter(req => req.user_id === user.id);
   const teamRequests = filteredRequests.filter(req => req.user_id !== user.id);
 
