@@ -17,9 +17,8 @@ import {
 } from 'lucide-react'
 
 // Import shadcn/ui components
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import Link from 'next/link'
 
@@ -95,7 +94,6 @@ const Tasks = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [priorityFilter, setPriorityFilter] = useState<string>('all')
   const [overdueFilter, setOverdueFilter] = useState<string>('all')
-  const [roleFilter, setRoleFilter] = useState<string>('assigned') // for leader role
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc') // desc = recent first
 
   // Fetch user role and department
@@ -139,14 +137,19 @@ const Tasks = () => {
         `)
 
         if (userRole === 'admin') {
-          console.log('Admin mode - fetching all tasks')
+          // Admin: see all tasks
+          // No filter needed
         } else if (userRole === 'leader') {
-          console.log('Leader mode - user.id:', user.id, 'type:', typeof user.id)
-          if (roleFilter === 'assigned') {
-            query = query.eq('assigned_by_id', user.id) // tasks he assigned
-          } else if (roleFilter === 'assigned_to') {
-            query = query.eq('assignee_id', user.id) // tasks assigned to him
+          // Leader: see tasks related to his department
+          if (userDepartment !== null) {
+            query = query.eq('department_id', userDepartment)
+          } else {
+            // If no department, show nothing
+            query = query.eq('id', -1)
           }
+        } else if (userRole === 'employee') {
+          // Employee: only see tasks assigned to himself
+          query = query.eq('assignee_id', user.id)
         }
 
         const { data: tasksData, error } = await query.order('due_date', { ascending: sortOrder === 'asc' })
@@ -179,7 +182,7 @@ const Tasks = () => {
     }
 
     fetchTasks()
-  }, [user, userRole, userDepartment, roleFilter, sortOrder])
+  }, [user, userRole, userDepartment, sortOrder])
 
   // Filter tasks based on status and priority
   useEffect(() => {
@@ -261,8 +264,10 @@ const Tasks = () => {
             {userRole === 'admin'
               ? 'All tasks in the system'
               : userRole === 'leader'
-                ? (roleFilter === 'assigned' ? 'Tasks you have assigned' : 'Tasks assigned to you')
-                : 'Tasks you have assigned'
+                ? 'Tasks in your department'
+                : userRole === 'employee'
+                  ? 'Tasks assigned to you'
+                  : ''
             }
           </p>
         </div>
@@ -270,17 +275,7 @@ const Tasks = () => {
         {/* Filters */}
         <div className="flex gap-2 items-center">
           <Filter className="w-4 h-4 text-muted-foreground" />
-          {userRole === 'leader' && (
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder="View" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="assigned">Tasks I Assigned</SelectItem>
-                <SelectItem value="assigned_to">Tasks Assigned to Me</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
+          {/* Only show filters for status, priority, overdue */}
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-32">
               <SelectValue placeholder="Status" />
@@ -325,7 +320,14 @@ const Tasks = () => {
             {tasks.length === 0 ? 'No tasks found' : 'No tasks match your filters'}
           </div>
           <div className="text-sm text-muted-foreground/70">
-            {userRole === 'admin' ? 'No tasks in the system' : 'You haven\'t assigned any tasks yet'}
+            {userRole === 'admin'
+              ? 'No tasks in the system'
+              : userRole === 'leader'
+                ? 'No tasks in your department'
+                : userRole === 'employee'
+                  ? 'No tasks assigned to you'
+                  : ''
+            }
           </div>
         </Card>
       ) : (
@@ -367,7 +369,7 @@ const Tasks = () => {
                         className={`
                           border-b transition-all hover:bg-muted/30 
                           ${isCompleted ? 'opacity-50 shadow-sm' : ''}
-                       ${isEven ? 'bg-yellow-50 dark:bg-yellow-900/20' : 'bg-yellow-100/50 dark:bg-yellow-800/30'}
+                          ${isEven ? 'bg-yellow-50 dark:bg-yellow-900/20' : 'bg-yellow-100/50 dark:bg-yellow-800/30'}
                           ${isOverdue(task.due_date) && !isCompleted ? 'border-l-4 border-l-destructive' : ''}
                         `}
                       >

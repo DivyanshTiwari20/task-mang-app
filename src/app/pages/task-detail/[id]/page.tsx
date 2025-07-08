@@ -18,14 +18,13 @@ import {
   Building2
 } from 'lucide-react'
 
-// Import shadcn/ui components
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
-import { Avatar, AvatarFallback, AvatarInitials } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
 interface Task {
   id: number
@@ -60,7 +59,6 @@ interface Comment {
 const getPriorityVariant = (priority: string) => {
   switch (priority.toLowerCase()) {
     case 'critical':
-      return 'destructive'
     case 'high':
       return 'destructive'
     case 'medium':
@@ -118,21 +116,18 @@ const TaskDetail = () => {
   useEffect(() => {
     const fetchUserInfo = async () => {
       if (!user?.id) return
-      
       try {
         const { data: userData, error } = await supabase
           .from('users')
           .select('role, department_id')
           .eq('id', user.id)
           .single()
-        
-        if (error) throw error
+        if (error || !userData) throw error || new Error('No user data')
         setUserRole(userData.role)
       } catch (error) {
         console.error('Error fetching user info:', error)
       }
     }
-
     fetchUserInfo()
   }, [user])
 
@@ -140,32 +135,26 @@ const TaskDetail = () => {
   useEffect(() => {
     const fetchTask = async () => {
       if (!taskId) return
-      
       try {
-        // Fetch task with assignee and assigned_by details
         const { data: taskData, error: taskError } = await supabase
           .from('tasks')
           .select('*')
           .eq('id', taskId)
           .single()
+        if (taskError || !taskData) throw taskError || new Error('No task data')
 
-        if (taskError) throw taskError
-
-        // Get assignee details
         const { data: assigneeData } = await supabase
           .from('users')
           .select('full_name, email')
           .eq('id', taskData.assignee_id)
           .single()
 
-        // Get assigned_by details
         const { data: assignedByData } = await supabase
           .from('users')
           .select('full_name')
           .eq('id', taskData.assigned_by)
           .single()
 
-        // Get department details
         const { data: departmentData } = await supabase
           .from('departments')
           .select('name')
@@ -179,60 +168,60 @@ const TaskDetail = () => {
           assigned_by_name: assignedByData?.full_name || 'Unknown User',
           department_name: departmentData?.name || 'Unknown Department'
         })
-
       } catch (error) {
         console.error('Error fetching task:', error)
       }
     }
-
     fetchTask()
   }, [taskId])
 
   // Fetch comments
   useEffect(() => {
     const fetchComments = async () => {
-      if (!taskId) return
-
+      if (!taskId) {
+        setLoading(false)
+        return
+      }
       try {
         const { data: commentsData, error } = await supabase
           .from('comments')
           .select('*')
           .eq('task_id', taskId)
           .order('created_at', { ascending: true })
+        if (error || !commentsData) throw error || new Error('No comments data')
 
-        if (error) throw error
-
-        // Get user details for each comment
-        const commentsWithUsers = await Promise.all(
-          (commentsData || []).map(async (comment) => {
-            const { data: userData } = await supabase
-              .from('users')
-              .select('full_name, role')
-              .eq('id', comment.user_id)
-              .single()
-
-            return {
-              ...comment,
-              user_name: userData?.full_name || 'Unknown User',
-              user_role: userData?.role || 'user'
-            }
-          })
-        )
-
+        // Only fetch user details if there are comments
+        let commentsWithUsers: Comment[] = []
+        if (commentsData.length > 0) {
+          commentsWithUsers = await Promise.all(
+            commentsData.map(async (comment) => {
+              const { data: userData } = await supabase
+                .from('users')
+                .select('full_name, role')
+                .eq('id', comment.user_id)
+                .single()
+              return {
+                ...comment,
+                user_name: userData?.full_name || 'Unknown User',
+                user_role: userData?.role || 'user'
+              }
+            })
+          )
+        }
         setComments(commentsWithUsers)
       } catch (error) {
-        console.error('Error fetching comments:', error)
+        // Log error with more info
+        console.error('Error fetching comments:', error instanceof Error ? error.message : error)
+        setComments([])
       } finally {
         setLoading(false)
       }
     }
-
     fetchComments()
   }, [taskId])
 
   const handleStatusUpdate = async (newStatus: string) => {
     if (!task || !user?.id) return
-
     setUpdatingStatus(true)
     try {
       const { error } = await supabase
@@ -242,12 +231,8 @@ const TaskDetail = () => {
           updated_at: new Date().toISOString()
         })
         .eq('id', task.id)
-
       if (error) throw error
-
       setTask({ ...task, status: newStatus })
-      
-      // Add a system comment about status change
       await supabase
         .from('comments')
         .insert({
@@ -256,8 +241,6 @@ const TaskDetail = () => {
           comment: `Status updated to: ${newStatus}`,
           created_at: new Date().toISOString()
         })
-
-      // Refresh comments
       window.location.reload()
     } catch (error) {
       console.error('Error updating status:', error)
@@ -268,7 +251,6 @@ const TaskDetail = () => {
 
   const handleAddComment = async () => {
     if (!newComment.trim() || !task || !user?.id) return
-
     setSubmittingComment(true)
     try {
       const { error } = await supabase
@@ -279,11 +261,8 @@ const TaskDetail = () => {
           comment: newComment.trim(),
           created_at: new Date().toISOString()
         })
-
       if (error) throw error
-
       setNewComment('')
-      // Refresh comments
       window.location.reload()
     } catch (error) {
       console.error('Error adding comment:', error)
@@ -294,26 +273,16 @@ const TaskDetail = () => {
 
   const canUpdateStatus = () => {
     if (!task || !user?.id) return false
-    
-    // Assignee can update status
     if (task.assignee_id === user.id) return true
-    
-    // Admin can update any task status
     if (userRole === 'admin') return true
-    
-    // Leader can update status of tasks they assigned
     if (userRole === 'leader' && task.assigned_by === user.id) return true
-    
     return false
   }
 
   const canCompleteTask = () => {
     if (!task || !user?.id) return false
-    
-    // Only admin and leader (for their assigned tasks) can mark as completed
     if (userRole === 'admin') return true
     if (userRole === 'leader' && task.assigned_by === user.id) return true
-    
     return false
   }
 

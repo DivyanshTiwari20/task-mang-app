@@ -47,17 +47,17 @@ export const EmployeeCards = () => {
                 </div>
 
                 {/* Monthly Attendance */}
-                <Card className='bg-amber-200'>
+                <Card className='bg-card border-muted shadow-md'>
                     <CardHeader>
-                        <CardTitle className="text-lg">My Attendance</CardTitle>
+                        <CardTitle className="text-lg text-foreground font-semibold">My Attendance</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="text-center">
-                            <div className="text-3xl font-bold text-blue-600 mb-2">
+                            <div className="text-3xl font-bold text-primary mb-2">
                                 {loadingAttendance ? '...' : monthlyAttendance}
                             </div>
-                            <div className="text-sm text-gray-600">Current Month Attendance</div>
-                            <div className="text-xs text-gray-500 mt-1">
+                            <div className="text-sm text-muted-foreground">Current Month Attendance</div>
+                            <div className="text-xs text-muted-foreground mt-1">
                                 {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                             </div>
                         </div>

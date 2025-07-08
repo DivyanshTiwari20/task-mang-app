@@ -166,16 +166,16 @@ export function AttendanceCard() {
   const isTodaySunday = isSunday(new Date())
 
   return (
-    <Card className='bg-purple-200'>
+    <Card className='bg-card border-muted shadow-md'>
       <CardHeader>
-        <CardTitle className="text-lg">Today&apos;s Attendance</CardTitle>
+        <CardTitle className="text-lg text-foreground font-semibold">Today&apos;s Attendance</CardTitle>
         {/* <div className="text-xs text-gray-600">
           Current Cycle: {currentCycle.start} to {currentCycle.end}
         </div> */}
       </CardHeader>
       <CardContent className="space-y-4">
         {isTodaySunday && (
-          <div className="text-start text-sm text-gray-500 font-medium p-2 ">
+          <div className="text-start text-sm text-muted-foreground font-medium p-2 ">
             🏖️ Today is Sunday - No attendance required
           </div>
         )}
@@ -183,14 +183,14 @@ export function AttendanceCard() {
         {!isTodaySunday && (
           <>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Check In:</span>
+              <span className="text-sm text-muted-foreground">Check In:</span>
               <span className="font-medium">
                 {formatTime(todayAttendance.check_in)}
               </span>
             </div>
 
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Check Out:</span>
+              <span className="text-sm text-muted-foreground">Check Out:</span>
               <span className="font-medium">
                 {formatTime(todayAttendance.check_out)}
               </span>
@@ -201,14 +201,14 @@ export function AttendanceCard() {
                 <Button 
                 onClick={handleCheckIn}
                 disabled={loading}
-                className="w-full bg-green-600 hover:bg-green-700"
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
                 >
                   {loading ? 'Checking In...' : 'Check In'}
                 </Button>
               )}
 
               {!isCheckedIn && !isWithinCheckInTime() && (
-                <div className="text-center text-sm text-red-600 font-medium">
+                <div className="text-center text-sm text-red-600 font-medium text-muted-foreground">
                   Check-in time: 10:00 AM - 10:30 AM
                 </div>
               )}
@@ -218,20 +218,20 @@ export function AttendanceCard() {
                 onClick={handleCheckOut}
                 disabled={loading}
                 variant="outline"
-                className="w-full border-red-300 text-red-600 hover:bg-red-50"
+                className="w-full border-red-300 text-red-600 hover:bg-red-50 text-muted-foreground"
                 >
                   {loading ? 'Checking Out...' : 'Check Out'}
                 </Button>
               )}
 
               {isCheckedIn && !isCheckedOut && !isAfter6PM() && (
-                <div className="text-center text-sm text-orange-600 font-medium">
+                  <div className="text-center text-sm text-orange-600 font-medium text-muted-foreground">
                   Check-out available after 6:00 PM
                 </div>
               )}
 
               {isCheckedIn && isCheckedOut && (
-                <div className="text-center text-sm text-green-600 font-medium">
+                <div className="text-center text-sm text-green-600 font-medium text-muted-foreground">
                   ✓ Attendance marked for today
                 </div>
               )}

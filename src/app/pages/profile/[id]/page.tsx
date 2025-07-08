@@ -1,3 +1,4 @@
+    'use client'
     // app/profile/[id]/page.tsx
     import UserProfilePage from '@/components/UserProfilePage'
     import { useParams } from 'next/navigation'

@@ -31,6 +31,7 @@ interface LeaveRequest {
     full_name: string;
     role: string;
     salary: number;
+    department_name: string; // ← add this line
   };
 }
 // Leave Stats Component

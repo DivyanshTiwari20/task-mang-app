@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { AlertCircle, Eye, Edit, Calendar, User, Building } from 'lucide-react'
+import { AlertCircle, Edit, Calendar, User, Building } from 'lucide-react'
 
 interface Task {
   id: number
@@ -214,7 +214,7 @@ export default function UserTasks({ userId, userProfile }: UserTasksProps) {
                   <th className="text-left p-3 font-medium">Due Date</th>
                   <th className="text-left p-3 font-medium">Assigned By</th>
                   <th className="text-left p-3 font-medium">Created</th>
-                  <th className="text-left p-3 font-medium">Actions</th>
+     
                 </tr>
               </thead>
               <tbody>
@@ -263,15 +263,7 @@ export default function UserTasks({ userId, userProfile }: UserTasksProps) {
                     </td>
                     <td className="p-3">
                       <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            router.push(`/pages/task-detail/${task.id}`)
-                          }}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                       
                         {canEditTasks() && (
                           <Button
                             variant="ghost"

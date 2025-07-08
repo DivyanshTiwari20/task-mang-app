@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import { EmployeeCards } from '@/components/cards/EmployeeCards'
-import Tasks from '../pages/tasks/page'
+import UserTasks from '@/components/UserProfile/UserTasks'
 
 interface Task {
   id: number
@@ -75,18 +75,18 @@ export default function EmployeeDashboard() {
   if (!user) return null
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto p-6">
         {/* Header Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Dashboard</h1>
-          <p className="text-slate-600 text-lg">Welcome back, {user.full_name}</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Dashboard</h1>
+          <p className="text-muted-foreground text-lg">Welcome back, {user.full_name}</p>
         </div>
         
         {/* Main Content Grid */}
         <div className="space-y-8">
           <EmployeeCards />
-          <Tasks />
+       <UserTasks userId={String(user.id)} userProfile={user} />
         </div>
       </div>
     </div>
