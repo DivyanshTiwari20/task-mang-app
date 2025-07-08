@@ -246,21 +246,21 @@ const Tasks = () => {
 
   if (loadingTasks) {
     return (
-      <div className="p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-4">
         <div className="animate-pulse">
-          <div className="h-8 bg-muted rounded w-1/4 mb-6"></div>
-          <div className="bg-muted rounded h-96"></div>
+          <div className="h-8 bg-muted rounded w-1/2 sm:w-1/4 mb-6"></div>
+          <div className="bg-muted rounded h-48 sm:h-96"></div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-2 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Active Tasks</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Active Tasks</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
             {userRole === 'admin'
               ? 'All tasks in the system'
               : userRole === 'leader'
@@ -273,11 +273,11 @@ const Tasks = () => {
         </div>
 
         {/* Filters */}
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-wrap gap-2 items-center">
           <Filter className="w-4 h-4 text-muted-foreground" />
           {/* Only show filters for status, priority, overdue */}
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-28 sm:w-32">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -290,7 +290,7 @@ const Tasks = () => {
           </Select>
 
           <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-28 sm:w-32">
               <SelectValue placeholder="Priority" />
             </SelectTrigger>
             <SelectContent>
@@ -302,7 +302,7 @@ const Tasks = () => {
             </SelectContent>
           </Select>
           <Select value={overdueFilter} onValueChange={setOverdueFilter}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-28 sm:w-32">
               <SelectValue placeholder="Overdue" />
             </SelectTrigger>
             <SelectContent>
@@ -315,7 +315,7 @@ const Tasks = () => {
       </div>
 
       {filteredTasks.length === 0 ? (
-        <Card className="text-center p-12">
+        <Card className="text-center p-6 sm:p-12">
           <div className="text-muted-foreground mb-2">
             {tasks.length === 0 ? 'No tasks found' : 'No tasks match your filters'}
           </div>
@@ -333,21 +333,22 @@ const Tasks = () => {
       ) : (
         <>
           {/* Table Container */}
-          <div className="rounded-lg border overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
+          <div className="rounded-lg border overflow-x-auto">
+            {/* Responsive Table: Hide table on small screens, show cards instead */}
+            <div className="hidden md:block">
+              <table className="w-full min-w-[700px]">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-muted-foreground">
                       Task Details
                     </th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-muted-foreground">
                       Assignee
                     </th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-muted-foreground">
                       Status & Priority
                     </th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-muted-foreground">
+                    <th className="px-4 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-muted-foreground">
                       <button 
                         onClick={toggleSortOrder}
                         className="flex items-center gap-1 hover:text-foreground transition-colors"
@@ -374,11 +375,11 @@ const Tasks = () => {
                         `}
                       >
                         {/* Task Details */}
-                        <td className="px-6 py-4">
+                        <td className="px-4 sm:px-6 py-3 sm:py-4">
                           <div className="space-y-1">
                             <Link 
                               href={`/pages/task-detail/${task.id}`}
-                              className="text-sm font-medium hover:text-primary transition-colors cursor-pointer line-clamp-2"
+                              className="text-xs sm:text-sm font-medium hover:text-primary transition-colors cursor-pointer line-clamp-2"
                             >
                               {task.title}
                             </Link>
@@ -397,11 +398,11 @@ const Tasks = () => {
                         </td>
 
                         {/* Assignee */}
-                        <td className="px-6 py-4">
+                        <td className="px-4 sm:px-6 py-3 sm:py-4">
                           <div className="flex items-center gap-2">
                             <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                             <div className="min-w-0">
-                              <div className="text-sm font-medium truncate">
+                              <div className="text-xs sm:text-sm font-medium truncate">
                                 {task.assignee_name || 'Unknown User'}
                               </div>
                               {task.assignee_email && (
@@ -415,7 +416,7 @@ const Tasks = () => {
                         </td>
 
                         {/* Status & Priority */}
-                        <td className="px-6 py-4">
+                        <td className="px-4 sm:px-6 py-3 sm:py-4">
                           <div className="flex flex-col gap-2">
                             <Badge variant={getStatusVariant(task.status || 'pending')} className="flex items-center gap-1 w-fit">
                               {getStatusIcon(task.status || 'pending')}
@@ -428,11 +429,11 @@ const Tasks = () => {
                         </td>
 
                         {/* Due Date */}
-                        <td className="px-6 py-4">
+                        <td className="px-4 sm:px-6 py-3 sm:py-4">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
                               <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                              <span className={`text-sm font-medium ${isOverdue(task.due_date) && !isCompleted ? 'text-destructive' : ''}`}>
+                              <span className={`text-xs sm:text-sm font-medium ${isOverdue(task.due_date) && !isCompleted ? 'text-destructive' : ''}`}>
                                 {formatDate(task.due_date)}
                               </span>
                               {isOverdue(task.due_date) && !isCompleted && (
@@ -454,12 +455,91 @@ const Tasks = () => {
                 </tbody>
               </table>
             </div>
+            {/* Mobile Card List */}
+            <div className="block md:hidden">
+              <div className="flex flex-col gap-3">
+                {filteredTasks.map((task, index) => {
+                  const isCompleted = task.status?.toLowerCase() === 'completed'
+                  const isOver = isOverdue(task.due_date) && !isCompleted
+                  return (
+                    <Card
+                      key={task.id}
+                      className={`
+                        p-3 sm:p-4 border
+                        ${isCompleted ? 'opacity-50 shadow-sm' : ''}
+                        ${isOver ? 'border-l-4 border-l-destructive' : ''}
+                        bg-yellow-50 dark:bg-yellow-900/20
+                      `}
+                    >
+                      <div className="flex items-center justify-between">
+                        <Link
+                          href={`/pages/task-detail/${task.id}`}
+                          className="text-base font-semibold hover:text-primary transition-colors cursor-pointer line-clamp-2"
+                        >
+                          {task.title}
+                        </Link>
+                        <div className="flex flex-col items-end gap-1">
+                          <Badge variant={getStatusVariant(task.status || 'pending')} className="flex items-center gap-1 w-fit">
+                            {getStatusIcon(task.status || 'pending')}
+                            <span className="text-xs">{task.status || 'Pending'}</span>
+                          </Badge>
+                          <Badge variant={getPriorityVariant(task.priority)} className="text-xs w-fit">
+                            {task.priority}
+                          </Badge>
+                        </div>
+                      </div>
+                      {task.description && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                          {task.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 mt-2">
+                        <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        <div className="min-w-0">
+                          <div className="text-xs font-medium truncate">
+                            {task.assignee_name || 'Unknown User'}
+                          </div>
+                          {task.assignee_email && (
+                            <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                              <Mail className="w-3 h-3" />
+                              {task.assignee_email}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        <span className={`text-xs font-medium ${isOver ? 'text-destructive' : ''}`}>
+                          {formatDate(task.due_date)}
+                        </span>
+                        {isOver && (
+                          <Badge variant="destructive" className="text-xs">
+                            Overdue
+                          </Badge>
+                        )}
+                      </div>
+                      {task.assigned_by_name && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                          <UserCheck className="w-3 h-3" />
+                          <span>by {task.assigned_by_name}</span>
+                        </div>
+                      )}
+                      {task.assigned_at && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Assigned: {formatDateTime(task.assigned_at)}
+                        </div>
+                      )}
+                    </Card>
+                  )
+                })}
+              </div>
+            </div>
           </div>
 
           {/* Footer Info */}
           <Card className="bg-muted/30">
-            <CardContent className="py-3">
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <CardContent className="py-2 sm:py-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-muted-foreground gap-1">
                 <span>Showing {filteredTasks.length} of {tasks.length} tasks</span>
                 <span>Last updated: {new Date().toLocaleString()}</span>
               </div>

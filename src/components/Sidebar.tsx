@@ -1,7 +1,7 @@
 // src/components/Sidebar.tsx
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth'
@@ -13,8 +13,6 @@ import {
   Wallet,
   User,
   Settings,
-  ChevronLeft,
-  ChevronRight,
   LogOut,
 } from 'lucide-react'
 import {
@@ -39,7 +37,6 @@ const navLinks = [
   { href: '/pages/employee-detail-list', label: 'Employee List', icon: Users, roles: ['admin', 'leader'] },
   { href: '/pages/leave-approve', label: 'Leave Approval', icon: ClipboardCheck, roles: ['admin', 'leader', 'employee'] },
   { href: '/finance', label: 'Finance', icon: Wallet, roles: ['admin'] },
- 
   { href: '/pages/admin-leader', label: 'Task', icon: Briefcase, roles: [ 'admin','leader','employee'] },
 ]
 
@@ -71,6 +68,32 @@ export default function AppSidebar() {
   const { user, logout } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
+  const [open, setOpen] = useState(false)
+
+  // Responsive: open sidebar by default on desktop, closed on mobile
+  useEffect(() => {
+    // Only run on client
+    const handleResize = () => {
+      if (typeof window !== 'undefined') {
+        if (window.innerWidth < 768) {
+          setOpen(false)
+        } else {
+          setOpen(true)
+        }
+      }
+    }
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // Close sidebar on route change (for mobile)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setOpen(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname])
 
   if (!user) return null
 
@@ -86,36 +109,53 @@ export default function AppSidebar() {
   const profileHref = `/pages/profile/${user.id}`
 
   return (
-    <Sidebar>
-      {/* SidebarTrigger button from shadcn sidebar */}
-      <SidebarTrigger className="absolute top-4 right-[-18px] z-20" aria-label="Toggle sidebar" />
-      <SidebarContent>
-        {/* Navigation Links */}
-        <SidebarGroup>
-          <Image src='/logo.png' alt='hi' width={100} height={100} className='flex items-center m-1 mb-4'></Image>
-          {/* <SidebarGroupLabel>Navigation</SidebarGroupLabel> */}
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {filteredNavLinks.map(link => (
-                <SidebarItem
-                  key={link.href}
-                  href={link.href}
-                  label={link.label}
-                  icon={link.icon}
-                  isActive={pathname === link.href}
-                />
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Settings Links */}
-        {filteredSettingsLinks.length > 0 && (
+    <>
+      {/* Mobile: fixed topbar with toggle button */}
+      <div className="md:hidden flex items-center justify-between px-4 py-2 bg-background border-b z-30 fixed top-0 left-0 right-0 h-14">
+        <div className="flex items-center gap-2">
+          <Image src='/logo.png' alt='Logo' width={40} height={40} className="mr-2" />
+          <span className="font-bold text-lg">Dashboard</span>
+        </div>
+        <SidebarTrigger
+          aria-label="Open sidebar"
+          className="md:hidden"
+          onClick={() => setOpen(true)}
+        />
+      </div>
+      {/* Sidebar overlay for mobile */}
+      {open && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          onClick={() => setOpen(false)}
+          aria-label="Sidebar overlay"
+        />
+      )}
+      <Sidebar
+        className={`
+          fixed z-50 top-0 left-0 h-screen w-64 transition-transform duration-200
+          ${open ? 'translate-x-0' : '-translate-x-full'}
+          md:static md:translate-x-0 md:w-64
+          md:h-screen
+          bg-background border-r
+          flex flex-col
+        `}
+      >
+        {/* SidebarTrigger for desktop (collapse/expand if needed) */}
+        <SidebarTrigger
+          className="hidden md:block absolute top-4 right-[-18px] z-20"
+          aria-label="Toggle sidebar"
+          onClick={() => setOpen(o => !o)}
+        />
+        <SidebarContent className="flex-1 flex flex-col">
+          {/* Navigation Links */}
           <SidebarGroup>
-            <SidebarGroupLabel>Settings</SidebarGroupLabel>
+            <div className="flex items-center m-1 mb-4">
+              <Image src='/logo.png' alt='Logo' width={100} height={100} />
+            </div>
+            {/* <SidebarGroupLabel>Navigation</SidebarGroupLabel> */}
             <SidebarGroupContent>
               <SidebarMenu>
-                {filteredSettingsLinks.map(link => (
+                {filteredNavLinks.map(link => (
                   <SidebarItem
                     key={link.href}
                     href={link.href}
@@ -127,31 +167,51 @@ export default function AppSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-        )}
-      </SidebarContent>
-      <ModeToggle />
-      {/* Profile and Logout Button */}
-      <SidebarFooter>
-        <SidebarMenu>
-          {/* Profile link at the bottom */}
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname === profileHref}>
-              <Link href={profileHref} className="flex items-center gap-2">
-                <User />
-                <span className='text-base'>Profile</span>
-                {/* Optionally show user name/email */}
-                {/* <span className="ml-2 text-xs text-muted-foreground">{user.full_name || user.username}</span> */}
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleLogout}>
-              <LogOut />
-              <span className='text-base'>Logout</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-    </Sidebar>
+
+          {/* Settings Links */}
+          {filteredSettingsLinks.length > 0 && (
+            <SidebarGroup>
+              <SidebarGroupLabel>Settings</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {filteredSettingsLinks.map(link => (
+                    <SidebarItem
+                      key={link.href}
+                      href={link.href}
+                      label={link.label}
+                      icon={link.icon}
+                      isActive={pathname === link.href}
+                    />
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
+        </SidebarContent>
+        <ModeToggle />
+        {/* Profile and Logout Button */}
+        <SidebarFooter>
+          <SidebarMenu>
+            {/* Profile link at the bottom */}
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname === profileHref}>
+                <Link href={profileHref} className="flex items-center gap-2">
+                  <User />
+                  <span className='text-base'>Profile</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton onClick={handleLogout}>
+                <LogOut />
+                <span className='text-base'>Logout</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </Sidebar>
+      {/* Add padding to dashboard pages for mobile topbar */}
+      <div className="md:hidden h-14" />
+    </>
   )
 }

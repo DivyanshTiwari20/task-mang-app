@@ -21,7 +21,7 @@ interface EmployeeWithAttendance {
   email: string
   full_name: string
   role: 'admin' | 'leader' | 'employee'
-  department_id: number  // Changed from 'number | null' to 'number'
+  department_id: number
   gender?: 'male' | 'female'
   profile_image?: string
   todayAttendance?: {
@@ -55,8 +55,9 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
     }
   }
 
-  const fetchEmployees = useCallback(async () => {
-    if (!user) {
+  // fetchEmployees should not depend on user object directly, only on user.id, user.role, user.department_id
+  const fetchEmployees = useCallback(async (role: string | undefined, department_id: number | undefined) => {
+    if (!role) {
       setDataLoading(false)
       setEmployees([])
       return
@@ -77,11 +78,11 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
         department:departments(id, name)
       `)
 
-    if (user.role === 'admin') {
+    if (role === 'admin') {
       query = query.not('role', 'eq', 'admin')
-    } else if (user.role === 'leader') {
+    } else if (role === 'leader') {
       query = query
-        .eq('department_id', user.department_id)
+        .eq('department_id', department_id)
         .eq('role', 'employee')
     } else {
       setDataLoading(false)
@@ -105,9 +106,8 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
 
       const employeesWithAttendance = await Promise.all(
         usersData
-          .filter((emp: any) => emp.department_id !== null) // Filter out employees without department_id
+          .filter((emp: any) => emp.department_id !== null)
           .map(async (emp: any) => {
-            // Fetch today's attendance
             const { data: todayData } = await supabase
               .from('attendance')
               .select('check_in, check_out')
@@ -115,7 +115,6 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
               .eq('date', todayISO)
               .single()
 
-            // Fetch monthly attendance count
             const { data: monthlyData } = await supabase
               .from('attendance')
               .select('id')
@@ -133,13 +132,16 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
       setEmployees(employeesWithAttendance)
     }
     setDataLoading(false)
-  }, [user])
+  }, [])
 
+  // Only call fetchEmployees when user is ready and only when relevant user fields change
   useEffect(() => {
-    if (!authLoading) {
-      fetchEmployees()
+    if (!authLoading && user) {
+      fetchEmployees(user.role, user.department_id ?? undefined)
     }
-  }, [user, authLoading, fetchEmployees])
+    // Only depend on user.role and user.department_id, not the whole user object
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user?.role, user?.department_id, fetchEmployees])
 
   useEffect(() => {
     const filtered = employees.filter(emp =>
@@ -180,24 +182,41 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
   }
 
   if (authLoading || dataLoading) {
-    return <div className="text-center py-4">Loading employees...</div>
+    return (
+      <div className="flex justify-center items-center py-8 min-h-[120px]">
+        <span className="text-center text-base sm:text-lg">Loading employees...</span>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-4">
+    <div
+      className="
+        space-y-4
+        w-full
+        max-w-3xl
+        mx-auto
+        px-2 sm:px-4
+        md:max-w-5xl
+        lg:max-w-6xl
+        xl:max-w-7xl
+        2xl:max-w-[1200px]
+      "
+      style={{ width: '100%' }}
+    >
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search employees"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
+          className="pl-10 w-full"
         />
       </div>
 
       <div className="space-y-3">
         {filteredEmployees.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="text-center py-8 text-muted-foreground text-base sm:text-lg">
             {employees.length === 0 
               ? "No employees found or you do not have permission to view this list."
               : "No employees match your search criteria."
@@ -208,10 +227,10 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
         {filteredEmployees.map((employee) => (
           <div
             key={employee.id}
-            className="flex items-center justify-between p-4 bg-card rounded-lg border border-border"
+            className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-card rounded-lg border border-border transition-shadow hover:shadow-md w-full"
           >
-            <div className="flex items-center space-x-3">
-              <Avatar className="h-10 w-10">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
+              <Avatar className="h-12 w-12 sm:h-14 sm:w-14 flex-shrink-0">
                 <AvatarFallback className="bg-primary/10 text-primary">
                   <img
                     src={employee.profile_image || getDefaultAvatar(employee.gender)}
@@ -224,28 +243,36 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
                 </AvatarFallback>
               </Avatar>
 
-              <div>
-                <Link href={`/pages/profile/${employee.id}`} className="text-card-foreground">{employee.full_name}</Link>
-                {/* <div className="font-medium text-card-foreground">
+              <div className="flex-1 min-w-0">
+                <Link
+                  href={`/pages/profile/${employee.id}`}
+                  className="text-card-foreground font-semibold text-base sm:text-lg truncate hover:underline"
+                >
                   {employee.full_name}
-                </div> */}
-                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                  <span>{employee.department?.name}</span>
-                  <span>•</span>
+                </Link>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm text-muted-foreground mt-1">
+                  <span className="truncate max-w-[120px] sm:max-w-[180px]">{employee.department?.name}</span>
+                  <span className="hidden sm:inline">•</span>
                   <span>{getAttendancePercentage(employee.monthlyAttendance || 0)}% attendance</span>
                 </div>
-                <div className="flex items-center space-x-2 mt-1">
+                <div className="flex flex-wrap items-center gap-2 mt-2">
                   <Badge
                     variant={isCheckedInToday(employee.todayAttendance) ? "default" : "secondary"}
-                    className={isCheckedInToday(employee.todayAttendance) 
-                      ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400" 
-                      : ""
+                    className={
+                      (isCheckedInToday(employee.todayAttendance) 
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                        : ""
+                      ) +
+                      " px-2 py-1 text-xs sm:text-sm"
                     }
                   >
                     {isCheckedInToday(employee.todayAttendance) ? 'Checked In' : 'Not Checked In'}
                   </Badge>
                   {employee.role && employee.role !== 'employee' && (
-                    <Badge variant="outline" className="bg-muted text-muted-foreground">
+                    <Badge
+                      variant="outline"
+                      className="bg-muted text-muted-foreground px-2 py-1 text-xs sm:text-sm"
+                    >
                       {employee.role.charAt(0).toUpperCase() + employee.role.slice(1)}
                     </Badge>
                   )}
@@ -254,14 +281,16 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
             </div>
 
             {shouldShowAssignTaskButton(employee) && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleAssignTaskClick(employee.id)}
-                className="bg-muted hover:bg-muted/80"
-              >
-                Assign Task
-              </Button>
+              <div className="flex justify-end sm:justify-center w-full sm:w-auto">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAssignTaskClick(employee.id)}
+                  className="bg-muted hover:bg-muted/80 w-full sm:w-auto mt-2 sm:mt-0"
+                >
+                  Assign Task
+                </Button>
+              </div>
             )}
           </div>
         ))}

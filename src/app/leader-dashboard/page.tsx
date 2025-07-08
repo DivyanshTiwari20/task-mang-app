@@ -85,7 +85,7 @@ export default function LeaderDashboard() {
         {/* Team Members List */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">My Team  {user.department?.name}</CardTitle>
+            <CardTitle className="text-lg">My Team {user.department_id}</CardTitle>
           </CardHeader>
           <CardContent>
             <EmployeeList showAssignTask={true} />

@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+        error: process.env.NODE_ENV === 'development' && error instanceof Error ? error.message : 'Something went wrong'
       },
       { status: 500 }
     );

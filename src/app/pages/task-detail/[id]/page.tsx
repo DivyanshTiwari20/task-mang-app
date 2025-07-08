@@ -107,12 +107,13 @@ const TaskDetail = () => {
   const [task, setTask] = useState<Task | null>(null)
   const [comments, setComments] = useState<Comment[]>([])
   const [userRole, setUserRole] = useState<string>('')
+  const [userDepartmentId, setUserDepartmentId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [newComment, setNewComment] = useState('')
   const [submittingComment, setSubmittingComment] = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState(false)
 
-  // Fetch user role
+  // Fetch user role and department_id
   useEffect(() => {
     const fetchUserInfo = async () => {
       if (!user?.id) return
@@ -124,6 +125,7 @@ const TaskDetail = () => {
           .single()
         if (error || !userData) throw error || new Error('No user data')
         setUserRole(userData.role)
+        setUserDepartmentId(userData.department_id)
       } catch (error) {
         console.error('Error fetching user info:', error)
       }
@@ -271,18 +273,46 @@ const TaskDetail = () => {
     }
   }
 
+  // New: Determine which status options are available for the current user
+  const getAvailableStatusOptions = () => {
+    if (!task || !user?.id) return []
+    // Admin: all options
+    if (userRole === 'admin') {
+      return ['pending', 'in_progress', 'completed', 'cancelled']
+    }
+    // Leader: can change status of tasks from his department
+    if (userRole === 'leader' && userDepartmentId && task.department_id === userDepartmentId) {
+      return ['pending', 'in_progress', 'completed', 'cancelled']
+    }
+    // Employee: can only set to pending or in_progress
+    if (userRole === 'employee' && task.assignee_id === user.id) {
+      return ['pending', 'in_progress']
+    }
+    // Fallback: only allow if assignee (for legacy logic)
+    if (task.assignee_id === user.id) {
+      return ['pending', 'in_progress']
+    }
+    return []
+  }
+
+  // New: canUpdateStatus logic
   const canUpdateStatus = () => {
     if (!task || !user?.id) return false
-    if (task.assignee_id === user.id) return true
     if (userRole === 'admin') return true
-    if (userRole === 'leader' && task.assigned_by === user.id) return true
+    // Leader: can update status of tasks from his department
+    if (userRole === 'leader' && userDepartmentId && task.department_id === userDepartmentId) return true
+    // Employee: can update status of their own tasks (but only to pending/in_progress)
+    if (userRole === 'employee' && task.assignee_id === user.id) return true
+    // Fallback: allow assignee (legacy)
+    if (task.assignee_id === user.id) return true
     return false
   }
 
+  // New: canCompleteTask logic (for showing completed/cancelled options)
   const canCompleteTask = () => {
     if (!task || !user?.id) return false
     if (userRole === 'admin') return true
-    if (userRole === 'leader' && task.assigned_by === user.id) return true
+    if (userRole === 'leader' && userDepartmentId && task.department_id === userDepartmentId) return true
     return false
   }
 
@@ -333,6 +363,9 @@ const TaskDetail = () => {
       </div>
     )
   }
+
+  // Available status options for the current user
+  const availableStatusOptions = getAvailableStatusOptions()
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
@@ -385,10 +418,18 @@ const TaskDetail = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        {canCompleteTask() && <SelectItem value="completed">Completed</SelectItem>}
-                        {canCompleteTask() && <SelectItem value="cancelled">Cancelled</SelectItem>}
+                        {availableStatusOptions.includes('pending') && (
+                          <SelectItem value="pending">Pending</SelectItem>
+                        )}
+                        {availableStatusOptions.includes('in_progress') && (
+                          <SelectItem value="in_progress">In Progress</SelectItem>
+                        )}
+                        {availableStatusOptions.includes('completed') && (
+                          <SelectItem value="completed">Completed</SelectItem>
+                        )}
+                        {availableStatusOptions.includes('cancelled') && (
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                     {updatingStatus && <div className="text-sm text-muted-foreground">Updating...</div>}

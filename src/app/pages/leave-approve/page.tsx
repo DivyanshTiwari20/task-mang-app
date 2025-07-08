@@ -562,22 +562,25 @@ const LeavePage = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Leave Management</h1>
-        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Apply Leave
-            </Button>
-          </SheetTrigger>
-          <SheetContent className="sm:max-w-md">
-            <SheetHeader>
-              <SheetTitle>Request Time Off</SheetTitle>
-            </SheetHeader>
-            <div className="mt-6">
-              <LeaveApplicationForm onSuccess={() => { setSheetOpen(false); fetchRequests(); }} />
-            </div>
-          </SheetContent>
-        </Sheet>
+        {/* Remove Apply Leave button for admin */}
+        {user.role !== 'admin' && (
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+            <SheetTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Apply Leave
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="sm:max-w-md">
+              <SheetHeader>
+                <SheetTitle>Request Time Off</SheetTitle>
+              </SheetHeader>
+              <div className="mt-6">
+                <LeaveApplicationForm onSuccess={() => { setSheetOpen(false); fetchRequests(); }} />
+              </div>
+            </SheetContent>
+          </Sheet>
+        )}
       </div>
 
       <LeaveStats requests={requests} user={user} />
