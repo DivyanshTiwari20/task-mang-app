@@ -49,13 +49,14 @@ interface SidebarItemProps {
   label: string
   icon: React.ElementType
   isActive: boolean
+  onClick?: () => void
 }
 
-function SidebarItem({ href, label, icon: Icon, isActive }: SidebarItemProps) {
+function SidebarItem({ href, label, icon: Icon, isActive, onClick }: SidebarItemProps) {
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={isActive}>
-        <Link href={href}>
+        <Link href={href} onClick={onClick}>
           <Icon className='w-8 h-8' />
           <span className='text-base'>{label}</span>
         </Link>
@@ -92,7 +93,6 @@ export default function AppSidebar() {
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
       setOpen(false)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname])
 
   if (!user) return null
@@ -103,6 +103,13 @@ export default function AppSidebar() {
   const handleLogout = () => {
     logout()
     router.push('/login')
+  }
+
+  // Function to close sidebar on mobile
+  const closeSidebarOnMobile = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setOpen(false)
+    }
   }
 
   // Profile link path
@@ -162,6 +169,7 @@ export default function AppSidebar() {
                     label={link.label}
                     icon={link.icon}
                     isActive={pathname === link.href}
+                    onClick={closeSidebarOnMobile}
                   />
                 ))}
               </SidebarMenu>
@@ -181,6 +189,7 @@ export default function AppSidebar() {
                       label={link.label}
                       icon={link.icon}
                       isActive={pathname === link.href}
+                      onClick={closeSidebarOnMobile}
                     />
                   ))}
                 </SidebarMenu>
@@ -195,7 +204,7 @@ export default function AppSidebar() {
             {/* Profile link at the bottom */}
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={pathname === profileHref}>
-                <Link href={profileHref} className="flex items-center gap-2">
+                <Link href={profileHref} className="flex items-center gap-2" onClick={closeSidebarOnMobile}>
                   <User />
                   <span className='text-base'>Profile</span>
                 </Link>

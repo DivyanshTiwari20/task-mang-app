@@ -355,7 +355,7 @@ const LeaveApplicationForm = ({ onSuccess }: { onSuccess: () => void }) => {
 };
 
 // Leave Request Card Component
-const LeaveRequestCard = ({ request, onAction, canApprove }: { request: LeaveRequest; onAction: () => void; canApprove: boolean }) => {
+const LeaveRequestCard = ({ request, onAction, canApprove, user }: { request: LeaveRequest; onAction: () => void; canApprove: boolean ; user: any}) => {
   const [loading, setLoading] = useState(false);
 
   const handleAction = async (action: 'approved' | 'rejected') => {
@@ -365,7 +365,7 @@ const LeaveRequestCard = ({ request, onAction, canApprove }: { request: LeaveReq
         .from('leave_requests')
         .update({
           status: action,
-          approved_by: request.user_id,
+          approved_by: user.id,
           updated_at: new Date().toISOString()
         })
         .eq('id', request.id);
@@ -597,7 +597,7 @@ const LeavePage = () => {
               <Card><CardContent className="p-8 text-center"><p className="text-gray-500">No leave requests found.</p></CardContent></Card>
             ) : (
               myRequests.map((request) => (
-                <LeaveRequestCard key={request.id} request={request} onAction={fetchRequests} canApprove={false} />
+                <LeaveRequestCard key={request.id} request={request} onAction={fetchRequests} canApprove={false} user={user} />
               ))
             )}
           </TabsContent>
@@ -606,7 +606,7 @@ const LeavePage = () => {
               <Card><CardContent className="p-8 text-center"><p className="text-gray-500">No team leave requests found.</p></CardContent></Card>
             ) : (
               teamRequests.map((request) => (
-                <LeaveRequestCard key={request.id} request={request} onAction={fetchRequests} canApprove={canApprove(request)} />
+                <LeaveRequestCard key={request.id} request={request} onAction={fetchRequests} canApprove={canApprove(request)} user={user} />
               ))
             )}
           </TabsContent>
@@ -617,7 +617,7 @@ const LeavePage = () => {
             <Card><CardContent className="p-8 text-center"><p className="text-gray-500">No leave requests found.</p></CardContent></Card>
           ) : (
             filteredRequests.map((request) => (
-              <LeaveRequestCard key={request.id} request={request} onAction={fetchRequests} canApprove={canApprove(request)} />
+              <LeaveRequestCard key={request.id} request={request} onAction={fetchRequests} canApprove={canApprove(request)} user={user} />
             ))
           )}
         </div>

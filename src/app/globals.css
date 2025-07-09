@@ -5,41 +5,41 @@
 
 @layer base {
   :root {
-    /* Light mode - strong yellowish tones */
-    --background: 48 80% 92%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 48 35% 94%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 48 35% 94%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 45 85% 50%;
+    /* Light mode - beautiful pink theme for girls */
+    --background: 330 100% 98%;
+    --foreground: 340 82% 12%;
+    --card: 330 60% 96%;
+    --card-foreground: 340 82% 12%;
+    --popover: 330 60% 96%;
+    --popover-foreground: 340 82% 12%;
+    --primary: 330 81% 60%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 45 35% 88%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 45 35% 88%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 45 35% 88%;
-    --accent-foreground: 222.2 84% 4.9%;
+    --secondary: 330 45% 92%;
+    --secondary-foreground: 340 82% 12%;
+    --muted: 330 45% 92%;
+    --muted-foreground: 340 25% 55%;
+    --accent: 330 45% 92%;
+    --accent-foreground: 340 82% 12%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 45 30% 82%;
-    --input: 45 30% 85%;
-    --ring: 45 85% 50%;
+    --destructive-foreground: 330 100% 98%;
+    --border: 330 40% 88%;
+    --input: 330 40% 90%;
+    --ring: 330 81% 60%;
     --radius: 0.75rem;
     
-    /* Sidebar with strong yellowish tones */
-    --sidebar-background: 48 45% 88%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 45 85% 45%;
+    /* Sidebar with beautiful pink tones */
+    --sidebar-background: 330 50% 94%;
+    --sidebar-foreground: 340 60% 20%;
+    --sidebar-primary: 330 81% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 45 40% 85%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 45 35% 80%;
-    --sidebar-ring: 45 85% 50%;
+    --sidebar-accent: 330 45% 90%;
+    --sidebar-accent-foreground: 340 70% 15%;
+    --sidebar-border: 330 35% 85%;
+    --sidebar-ring: 330 81% 60%;
   }
 
   .dark {
-    /* Dark mode - warm moonlight tones with yellowish text */
+    /* Dark mode - warm moonlight tones with yellowish text (unchanged) */
     --background: 45 8% 12%;
     --foreground: 48 35% 88%;
     --card: 45 10% 15%;
@@ -60,7 +60,7 @@
     --input: 45 12% 22%;
     --ring: 45 85% 55%;
     
-    /* Dark sidebar with elevation and warm yellowish tones */
+    /* Dark sidebar with elevation and warm yellowish tones (unchanged) */
     --sidebar-background: 45 15% 8%;
     --sidebar-foreground: 48 30% 85%;
     --sidebar-primary: 45 85% 58%;
@@ -81,12 +81,12 @@
   }
 }
 
-/* Additional styles for enhanced elevation and warm feel */
+/* Additional styles for enhanced elevation and feminine feel */
 @layer components {
   .sidebar-elevated {
     box-shadow: 
-      0 4px 6px -1px rgba(255, 248, 220, 0.1),
-      0 2px 4px -1px rgba(255, 248, 220, 0.06);
+      0 4px 6px -1px rgba(255, 182, 193, 0.15),
+      0 2px 4px -1px rgba(255, 182, 193, 0.08);
   }
   
   .dark .sidebar-elevated {
@@ -97,8 +97,8 @@
   
   .card-elevated {
     box-shadow: 
-      0 1px 3px 0 rgba(255, 248, 220, 0.1),
-      0 1px 2px 0 rgba(255, 248, 220, 0.06);
+      0 1px 3px 0 rgba(255, 182, 193, 0.12),
+      0 1px 2px 0 rgba(255, 182, 193, 0.08);
   }
   
   .dark .card-elevated {

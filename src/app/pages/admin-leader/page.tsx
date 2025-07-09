@@ -84,6 +84,18 @@ const getStatusIcon = (status: string) => {
   }
 }
 
+// Status options for different roles
+const STATUS_OPTIONS = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' }
+]
+const EMPLOYEE_STATUS_OPTIONS = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'in_progress', label: 'In Progress' }
+]
+
 const Tasks = () => {
   const { user } = useAuth()
   const [tasks, setTasks] = useState<Task[]>([])
@@ -95,6 +107,7 @@ const Tasks = () => {
   const [priorityFilter, setPriorityFilter] = useState<string>('all')
   const [overdueFilter, setOverdueFilter] = useState<string>('all')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc') // desc = recent first
+  const [updatingStatusId, setUpdatingStatusId] = useState<number | null>(null)
 
   // Fetch user role and department
   useEffect(() => {
@@ -244,6 +257,52 @@ const Tasks = () => {
     setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
   }
 
+  // Handle status change
+  const handleStatusChange = async (task: Task, newStatus: string) => {
+    if (task.status?.toLowerCase() === newStatus) return
+    setUpdatingStatusId(task.id)
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', task.id)
+      if (error) throw error
+
+      // Update local state
+      setTasks(prev =>
+        prev.map(t =>
+          t.id === task.id ? { ...t, status: newStatus, updated_at: new Date().toISOString() } : t
+        )
+      )
+    } catch (error) {
+      console.error('Error updating status:', error)
+      // Optionally show error to user
+    } finally {
+      setUpdatingStatusId(null)
+    }
+  }
+
+  // Determine if user can change status for a given task
+  const canChangeStatus = (task: Task) => {
+    if (userRole === 'admin' || userRole === 'leader') return true
+    if (userRole === 'employee' && user?.id === task.assignee_id) {
+      // Employee can only change status to 'pending' or 'in_progress'
+      return true
+    }
+    return false
+  }
+
+  // Get allowed status options for a given task
+  const getAllowedStatusOptions = (task: Task) => {
+    if (userRole === 'admin' || userRole === 'leader') {
+      return STATUS_OPTIONS
+    }
+    if (userRole === 'employee' && user?.id === task.assignee_id) {
+      return EMPLOYEE_STATUS_OPTIONS
+    }
+    return []
+  }
+
   if (loadingTasks) {
     return (
       <div className="p-4 sm:p-6 space-y-4">
@@ -363,7 +422,11 @@ const Tasks = () => {
                   {filteredTasks.map((task, index) => {
                     const isCompleted = task.status?.toLowerCase() === 'completed'
                     const isEven = index % 2 === 0
-                    
+                    const canEditStatus = canChangeStatus(task)
+                    const allowedStatusOptions = getAllowedStatusOptions(task)
+                    const isEmployee = userRole === 'employee'
+                    const isOwnTask = user?.id === task.assignee_id
+
                     return (
                       <tr 
                         key={task.id}
@@ -418,10 +481,36 @@ const Tasks = () => {
                         {/* Status & Priority */}
                         <td className="px-4 sm:px-6 py-3 sm:py-4">
                           <div className="flex flex-col gap-2">
-                            <Badge variant={getStatusVariant(task.status || 'pending')} className="flex items-center gap-1 w-fit">
-                              {getStatusIcon(task.status || 'pending')}
-                              <span className="text-xs">{task.status || 'Pending'}</span>
-                            </Badge>
+                            {/* Status: editable if allowed */}
+                            {canEditStatus && allowedStatusOptions.length > 0 ? (
+                              <Select
+                                value={task.status?.toLowerCase() || 'pending'}
+                                onValueChange={value => handleStatusChange(task, value)}
+                                disabled={updatingStatusId === task.id}
+                              >
+                                <SelectTrigger className="w-32 text-xs">
+                                  <div className="flex items-center gap-1">
+                                    {getStatusIcon(task.status || 'pending')}
+                                    <span className="text-xs capitalize">{task.status || 'Pending'}</span>
+                                  </div>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {allowedStatusOptions.map(opt => (
+                                    <SelectItem key={opt.value} value={opt.value}>
+                                      <div className="flex items-center gap-1">
+                                        {getStatusIcon(opt.value)}
+                                        <span className="text-xs capitalize">{opt.label}</span>
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <Badge variant={getStatusVariant(task.status || 'pending')} className="flex items-center gap-1 w-fit">
+                                {getStatusIcon(task.status || 'pending')}
+                                <span className="text-xs">{task.status || 'Pending'}</span>
+                              </Badge>
+                            )}
                             <Badge variant={getPriorityVariant(task.priority)} className="text-xs w-fit">
                               {task.priority}
                             </Badge>
@@ -461,6 +550,8 @@ const Tasks = () => {
                 {filteredTasks.map((task, index) => {
                   const isCompleted = task.status?.toLowerCase() === 'completed'
                   const isOver = isOverdue(task.due_date) && !isCompleted
+                  const canEditStatus = canChangeStatus(task)
+                  const allowedStatusOptions = getAllowedStatusOptions(task)
                   return (
                     <Card
                       key={task.id}
@@ -479,10 +570,36 @@ const Tasks = () => {
                           {task.title}
                         </Link>
                         <div className="flex flex-col items-end gap-1">
-                          <Badge variant={getStatusVariant(task.status || 'pending')} className="flex items-center gap-1 w-fit">
-                            {getStatusIcon(task.status || 'pending')}
-                            <span className="text-xs">{task.status || 'Pending'}</span>
-                          </Badge>
+                          {/* Status: editable if allowed */}
+                          {canEditStatus && allowedStatusOptions.length > 0 ? (
+                            <Select
+                              value={task.status?.toLowerCase() || 'pending'}
+                              onValueChange={value => handleStatusChange(task, value)}
+                              disabled={updatingStatusId === task.id}
+                            >
+                              <SelectTrigger className="w-32 text-xs">
+                                <div className="flex items-center gap-1">
+                                  {getStatusIcon(task.status || 'pending')}
+                                  <span className="text-xs capitalize">{task.status || 'Pending'}</span>
+                                </div>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {allowedStatusOptions.map(opt => (
+                                  <SelectItem key={opt.value} value={opt.value}>
+                                    <div className="flex items-center gap-1">
+                                      {getStatusIcon(opt.value)}
+                                      <span className="text-xs capitalize">{opt.label}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Badge variant={getStatusVariant(task.status || 'pending')} className="flex items-center gap-1 w-fit">
+                              {getStatusIcon(task.status || 'pending')}
+                              <span className="text-xs">{task.status || 'Pending'}</span>
+                            </Badge>
+                          )}
                           <Badge variant={getPriorityVariant(task.priority)} className="text-xs w-fit">
                             {task.priority}
                           </Badge>
