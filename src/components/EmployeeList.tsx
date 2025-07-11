@@ -29,10 +29,74 @@ interface EmployeeWithAttendance {
     check_out: string | null
   }
   monthlyAttendance?: number
+  totalWorkingDays?: number
   department?: {
     id: string
     name: string
   }
+}
+
+// Utility functions for cycle management
+const getCurrentCycle = () => {
+  const today = new Date()
+  const currentDate = today.getDate()
+  const currentMonth = today.getMonth()
+  const currentYear = today.getFullYear()
+
+  let cycleStart: Date
+  let cycleEnd: Date
+
+  if (currentDate >= 26) {
+    // Current cycle: 26th of this month to 25th of next month
+    cycleStart = new Date(currentYear, currentMonth, 26)
+    cycleEnd = new Date(currentYear, currentMonth + 1, 25)
+  } else {
+    // Current cycle: 26th of last month to 25th of this month
+    cycleStart = new Date(currentYear, currentMonth - 1, 26)
+    cycleEnd = new Date(currentYear, currentMonth, 25)
+  }
+
+  return {
+    start: cycleStart,
+    end: cycleEnd,
+    startISO: cycleStart.toISOString().split('T')[0],
+    endISO: cycleEnd.toISOString().split('T')[0]
+  }
+}
+
+const getWorkingDaysInCycle = (cycleStart: Date, cycleEnd: Date) => {
+  let workingDays = 0
+  const today = new Date()
+  
+  // Only count up to today if we're in the current cycle
+  const endDate = cycleEnd > today ? today : cycleEnd
+  
+  const currentDate = new Date(cycleStart)
+  
+  while (currentDate <= endDate) {
+    // Skip Sundays (getDay() returns 0 for Sunday)
+    if (currentDate.getDay() !== 0) {
+      workingDays++
+    }
+    currentDate.setDate(currentDate.getDate() + 1)
+  }
+  
+  return workingDays
+}
+
+const getTotalWorkingDaysInCycle = (cycleStart: Date, cycleEnd: Date) => {
+  let workingDays = 0
+  const currentDate = new Date(cycleStart)
+  
+  while (currentDate <= cycleEnd) {
+    // Skip Sundays (getDay() returns 0 for Sunday)
+    if (currentDate.getDay() !== 0) {
+      workingDays++
+    }
+    currentDate.setDate(currentDate.getDate() + 1)
+  }
+  
+  return workingDays
 }
 
 export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
@@ -101,13 +165,13 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
     if (usersData) {
       const today = new Date()
       const todayISO = today.toISOString().split('T')[0]
-      const currentMonth = today.getMonth() + 1
-      const currentYear = today.getFullYear()
+      const cycle = getCurrentCycle()
 
       const employeesWithAttendance = await Promise.all(
         usersData
           .filter((emp: any) => emp.department_id !== null)
           .map(async (emp: any) => {
+            // Get today's attendance
             const { data: todayData } = await supabase
               .from('attendance')
               .select('check_in, check_out')
@@ -115,17 +179,24 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
               .eq('date', todayISO)
               .single()
 
-            const { data: monthlyData } = await supabase
+            // Get cycle attendance - only count records with check_in
+            const { data: cycleData } = await supabase
               .from('attendance')
-              .select('id')
+              .select('id, date')
               .eq('user_id', emp.id)
-              .gte('date', `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`)
+              .gte('date', cycle.startISO)
+              .lte('date', cycle.endISO)
               .not('check_in', 'is', null)
+
+            // Calculate working days in current cycle (up to today)
+            const workingDaysUpToToday = getWorkingDaysInCycle(cycle.start, cycle.end)
+            const totalWorkingDaysInCycle = getTotalWorkingDaysInCycle(cycle.start, cycle.end)
 
             return {
               ...emp,
               todayAttendance: todayData,
-              monthlyAttendance: monthlyData?.length || 0
+              monthlyAttendance: cycleData?.length || 0,
+              totalWorkingDays: workingDaysUpToToday
             } as EmployeeWithAttendance
           })
       )
@@ -152,10 +223,9 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
     setFilteredEmployees(filtered)
   }, [employees, searchTerm])
 
-  const getAttendancePercentage = (monthlyAttendance: number) => {
-    const today = new Date()
-    const workingDaysThisMonth = Math.max(1, today.getDate())
-    return Math.round((monthlyAttendance / workingDaysThisMonth) * 100)
+  const getAttendancePercentage = (monthlyAttendance: number, totalWorkingDays: number) => {
+    if (totalWorkingDays === 0) return 0
+    return Math.round((monthlyAttendance / totalWorkingDays) * 100)
   }
 
   const isCheckedInToday = (attendance?: { check_in: string | null }) => {
@@ -253,7 +323,10 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm text-muted-foreground mt-1">
                   <span className="truncate max-w-[120px] sm:max-w-[180px]">{employee.department?.name}</span>
                   <span className="hidden sm:inline">•</span>
-                  <span>{getAttendancePercentage(employee.monthlyAttendance || 0)}% attendance</span>
+                  <span>
+                    {getAttendancePercentage(employee.monthlyAttendance || 0, employee.totalWorkingDays || 0)}% attendance
+                    ({employee.monthlyAttendance || 0}/{employee.totalWorkingDays || 0} days)
+                  </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   <Badge
