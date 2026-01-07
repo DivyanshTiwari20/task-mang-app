@@ -14,6 +14,7 @@ import {
   User,
   Settings,
   LogOut,
+  CheckSquare,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -37,7 +38,8 @@ const navLinks = [
   { href: '/pages/employee-detail-list', label: 'Employee List', icon: Users, roles: ['admin', 'leader'] },
   { href: '/pages/leave-approve', label: 'Leave Approval', icon: ClipboardCheck, roles: ['admin', 'leader', 'employee'] },
   { href: '/finance', label: 'Finance', icon: Wallet, roles: ['admin'] },
-  { href: '/pages/admin-leader', label: 'Task', icon: Briefcase, roles: [ 'admin','leader','employee'] },
+  { href: '/pages/admin-leader', label: 'Task', icon: Briefcase, roles: ['admin', 'leader', 'employee'] },
+  { href: '/pages/my-tasks', label: 'My Tasks', icon: CheckSquare, roles: ['admin', 'leader', 'employee'] },
 ]
 
 const settingsLinks = [

@@ -34,6 +34,9 @@ interface EmployeeWithAttendance {
     id: string
     name: string
   }
+  // Today's task stats
+  todayTasksTotal?: number
+  todayTasksCompleted?: number
 }
 
 // Utility functions for cycle management
@@ -67,12 +70,12 @@ const getCurrentCycle = () => {
 const getWorkingDaysInCycle = (cycleStart: Date, cycleEnd: Date) => {
   let workingDays = 0
   const today = new Date()
-  
+
   // Only count up to today if we're in the current cycle
   const endDate = cycleEnd > today ? today : cycleEnd
-  
+
   const currentDate = new Date(cycleStart)
-  
+
   while (currentDate <= endDate) {
     // Skip Sundays (getDay() returns 0 for Sunday)
     if (currentDate.getDay() !== 0) {
@@ -80,14 +83,14 @@ const getWorkingDaysInCycle = (cycleStart: Date, cycleEnd: Date) => {
     }
     currentDate.setDate(currentDate.getDate() + 1)
   }
-  
+
   return workingDays
 }
 
 const getTotalWorkingDaysInCycle = (cycleStart: Date, cycleEnd: Date) => {
   let workingDays = 0
   const currentDate = new Date(cycleStart)
-  
+
   while (currentDate <= cycleEnd) {
     // Skip Sundays (getDay() returns 0 for Sunday)
     if (currentDate.getDay() !== 0) {
@@ -95,7 +98,7 @@ const getTotalWorkingDaysInCycle = (cycleStart: Date, cycleEnd: Date) => {
     }
     currentDate.setDate(currentDate.getDate() + 1)
   }
-  
+
   return workingDays
 }
 
@@ -192,11 +195,23 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
             const workingDaysUpToToday = getWorkingDaysInCycle(cycle.start, cycle.end)
             const totalWorkingDaysInCycle = getTotalWorkingDaysInCycle(cycle.start, cycle.end)
 
+            // Get today's tasks for this employee
+            const { data: todayTasksData } = await supabase
+              .from('tasks')
+              .select('id, status')
+              .eq('assignee_id', emp.id)
+              .eq('due_date', todayISO)
+
+            const todayTasksTotal = todayTasksData?.length || 0
+            const todayTasksCompleted = todayTasksData?.filter((t: any) => t.status === 'completed').length || 0
+
             return {
               ...emp,
               todayAttendance: todayData,
               monthlyAttendance: cycleData?.length || 0,
-              totalWorkingDays: workingDaysUpToToday
+              totalWorkingDays: workingDaysUpToToday,
+              todayTasksTotal,
+              todayTasksCompleted
             } as EmployeeWithAttendance
           })
       )
@@ -239,15 +254,15 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
 
   const shouldShowAssignTaskButton = (employee: EmployeeWithAttendance) => {
     if (!showAssignTask || !user) return false
-    
+
     if (user.role === 'admin') {
       return employee.role === 'employee' || employee.role === 'leader'
     }
-    
+
     if (user.role === 'leader') {
       return employee.role === 'employee'
     }
-    
+
     return false
   }
 
@@ -287,13 +302,13 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
       <div className="space-y-3">
         {filteredEmployees.length === 0 && (
           <div className="text-center py-8 text-muted-foreground text-base sm:text-lg">
-            {employees.length === 0 
+            {employees.length === 0
               ? "No employees found or you do not have permission to view this list."
               : "No employees match your search criteria."
             }
           </div>
         )}
-        
+
         {filteredEmployees.map((employee) => (
           <div
             key={employee.id}
@@ -332,7 +347,7 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
                   <Badge
                     variant={isCheckedInToday(employee.todayAttendance) ? "default" : "secondary"}
                     className={
-                      (isCheckedInToday(employee.todayAttendance) 
+                      (isCheckedInToday(employee.todayAttendance)
                         ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
                         : ""
                       ) +
@@ -347,6 +362,19 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
                       className="bg-muted text-muted-foreground px-2 py-1 text-xs sm:text-sm"
                     >
                       {employee.role.charAt(0).toUpperCase() + employee.role.slice(1)}
+                    </Badge>
+                  )}
+                  {/* Today's Tasks Badge */}
+                  {(employee.todayTasksTotal !== undefined && employee.todayTasksTotal > 0) && (
+                    <Badge
+                      variant="outline"
+                      className={
+                        employee.todayTasksCompleted === employee.todayTasksTotal
+                          ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400 px-2 py-1 text-xs sm:text-sm"
+                          : "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 px-2 py-1 text-xs sm:text-sm"
+                      }
+                    >
+                      Tasks: {employee.todayTasksCompleted}/{employee.todayTasksTotal}
                     </Badge>
                   )}
                 </div>

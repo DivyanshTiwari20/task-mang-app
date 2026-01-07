@@ -75,6 +75,9 @@ interface Employee {
     check_in: string | null
     check_out: string | null
   }
+  // Today's task stats
+  todayTasksTotal?: number
+  todayTasksCompleted?: number
 }
 
 interface Department {
@@ -193,9 +196,21 @@ export default function EmployeeTablePage() {
               .eq('date', todayISO)
               .single()
 
+            // Get today's tasks for this employee
+            const { data: todayTasksData } = await supabase
+              .from('tasks')
+              .select('id, status')
+              .eq('assignee_id', emp.id)
+              .eq('due_date', todayISO)
+
+            const todayTasksTotal = todayTasksData?.length || 0
+            const todayTasksCompleted = todayTasksData?.filter((t: any) => t.status === 'completed').length || 0
+
             return {
               ...emp,
               todayAttendance: todayData,
+              todayTasksTotal,
+              todayTasksCompleted
             } as Employee
           })
       )
@@ -486,6 +501,7 @@ export default function EmployeeTablePage() {
               {/* Removed Join Date column */}
               {/* Only show Salary column if user is admin */}
               {isAdmin && <TableHead>Salary</TableHead>}
+              <TableHead>Tasks</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-12"></TableHead>
             </TableRow>
@@ -585,6 +601,22 @@ export default function EmployeeTablePage() {
                   {isAdmin && (
                     <TableCell>{formatSalary(employee.salary)}</TableCell>
                   )}
+                  <TableCell>
+                    {(employee.todayTasksTotal !== undefined && employee.todayTasksTotal > 0) ? (
+                      <Badge
+                        variant="outline"
+                        className={
+                          employee.todayTasksCompleted === employee.todayTasksTotal
+                            ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                            : "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
+                        }
+                      >
+                        {employee.todayTasksCompleted}/{employee.todayTasksTotal}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">-</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Badge
                       variant={isCheckedInToday(employee.todayAttendance) ? "default" : "secondary"}
