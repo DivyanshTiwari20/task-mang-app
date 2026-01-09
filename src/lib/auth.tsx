@@ -14,7 +14,7 @@ export interface CustomUser {
   leave_taken: number;
   department_name?: string;
 }
-  
+
 interface AuthContextType {
   user: CustomUser | null;
   login: (username: string, password: string) => Promise<{ success: boolean; error: string | null }>;
@@ -57,16 +57,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (username: string, password: string): Promise<{ success: boolean; error: string | null }> => {
     setLoading(true);
     setError(null);
-    
+
+    // Normalize credentials on client-side as well
+    // Username: trim and lowercase for case-insensitive matching
+    // Password: only trim (keep case-sensitive)
+    const normalizedUsername = username?.toString().trim().toLowerCase() || '';
+    const normalizedPassword = password?.toString().trim() || '';
+
+    // Validate after normalization
+    if (!normalizedUsername || !normalizedPassword) {
+      const errorMessage = 'Username and password are required';
+      setError(errorMessage);
+      setLoading(false);
+      return { success: false, error: errorMessage };
+    }
+
     try {
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username: normalizedUsername, password: normalizedPassword }),
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok && data.success) {
         setUser(data.user);
         localStorage.setItem('user', JSON.stringify(data.user));

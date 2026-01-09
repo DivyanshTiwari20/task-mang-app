@@ -15,13 +15,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('Login attempt for username:', username);
+    // Normalize credentials:
+    // - Username: trim whitespace and convert to lowercase for case-insensitive matching
+    // - Password: only trim whitespace (passwords should remain case-sensitive)
+    const normalizedUsername = username.toString().trim().toLowerCase();
+    const normalizedPassword = password.toString().trim();
 
-    // Find user by username (case-insensitive)
+    // Validate after normalization
+    if (!normalizedUsername || !normalizedPassword) {
+      return NextResponse.json(
+        { success: false, error: 'Username and password cannot be empty or only whitespace' },
+        { status: 400 }
+      );
+    }
+
+    console.log('Login attempt for username:', normalizedUsername);
+
+    // Find user by username (case-insensitive using ilike)
     const { data: userProfile, error: profileError } = await supabase
       .from('users')
       .select('id, username, email, full_name, role, department_id, department_name, salary, leave_taken, password')
-      .ilike('username', username)
+      .ilike('username', normalizedUsername)
       .single();
 
     console.log('Database query completed');
@@ -33,7 +47,7 @@ export async function POST(req: NextRequest) {
       // Check if it's a "no rows" error
       if (profileError.code === 'PGRST116') {
         return NextResponse.json(
-          { success: false, error: `User "${username}" not found. Please check your username.` },
+          { success: false, error: `User "${normalizedUsername}" not found. Please check your username.` },
           { status: 401 }
         );
       }
@@ -46,14 +60,15 @@ export async function POST(req: NextRequest) {
 
     if (!userProfile) {
       return NextResponse.json(
-        { success: false, error: `User "${username}" not found` },
+        { success: false, error: `User "${normalizedUsername}" not found` },
         { status: 401 }
       );
     }
 
-    // Simple password comparison (NOT SECURE - for development only)
-    // In production, use bcrypt.compare()
-    const isValidPassword = userProfile.password === password;
+    // Compare passwords (both trimmed)
+    // The stored password is also trimmed for comparison to handle any stored whitespace
+    const storedPassword = (userProfile.password || '').toString().trim();
+    const isValidPassword = storedPassword === normalizedPassword;
 
     console.log('Password match:', isValidPassword);
 
