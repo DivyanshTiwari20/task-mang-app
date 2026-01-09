@@ -300,6 +300,35 @@ export default function MyTasksPage() {
         }
     }
 
+    // Quick priority change
+    const handleQuickPriorityChange = async (task: Task, priority: string) => {
+        setUpdating(true)
+        try {
+            const { error } = await supabase
+                .from('tasks')
+                .update({
+                    priority: priority,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', task.id)
+
+            if (error) {
+                console.error('Error updating priority:', error.message)
+                return
+            }
+
+            setTasks(prev => prev.map(t =>
+                t.id === task.id
+                    ? { ...t, priority: priority as Task['priority'], updated_at: new Date().toISOString() }
+                    : t
+            ))
+        } catch (err) {
+            console.error('Error updating priority:', err)
+        } finally {
+            setUpdating(false)
+        }
+    }
+
     // Create new personal task
     const handleCreateTask = async () => {
         if (!user || !newTask.title.trim()) return
@@ -522,7 +551,7 @@ export default function MyTasksPage() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead
-                                            className="cursor-pointer hover:bg-muted/50"
+                                            className="cursor-pointer hover:bg-muted/50 min-w-[300px]"
                                             onClick={() => handleSort('title')}
                                         >
                                             <div className="flex items-center">
@@ -558,13 +587,12 @@ export default function MyTasksPage() {
                                             </div>
                                         </TableHead>
                                         <TableHead>Assigned By</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {paginatedTasks.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                            <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                                                 {tasks.length === 0
                                                     ? "No tasks assigned to you yet."
                                                     : "No tasks match your filters."
@@ -574,15 +602,19 @@ export default function MyTasksPage() {
                                     ) : (
                                         paginatedTasks.map((task) => (
                                             <TableRow key={task.id} className={isOverdue(task.due_date, task.status) ? 'bg-red-50 dark:bg-red-900/10' : ''}>
-                                                <TableCell>
+                                                <TableCell className="min-w-[300px]">
                                                     <div
-                                                        className="cursor-pointer"
+                                                        className="cursor-pointer space-y-2"
                                                         onClick={() => router.push(`/pages/task-detail/${task.id}`)}
                                                     >
-                                                        <p className="font-medium text-primary hover:underline">{task.title}</p>
-                                                        <p className="text-sm text-muted-foreground truncate max-w-xs">
-                                                            {task.description}
-                                                        </p>
+                                                        <p className="font-semibold text-base text-primary hover:underline">{task.title}</p>
+                                                        {task.description && (
+                                                            <div className="bg-muted/50 rounded-md px-3 py-2 border-l-4 border-primary/30">
+                                                                <p className="text-sm text-muted-foreground line-clamp-2">
+                                                                    {task.description}
+                                                                </p>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
@@ -607,7 +639,24 @@ export default function MyTasksPage() {
                                                     </Select>
                                                 </TableCell>
                                                 <TableCell>
-                                                    {getPriorityBadge(task.priority)}
+                                                    <Select
+                                                        value={task.priority}
+                                                        onValueChange={(value) => handleQuickPriorityChange(task, value)}
+                                                        disabled={updating}
+                                                    >
+                                                        <SelectTrigger className="w-[110px] h-8">
+                                                            <SelectValue>{getPriorityBadge(task.priority)}</SelectValue>
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {PRIORITY_OPTIONS.map(priority => (
+                                                                <SelectItem key={priority.value} value={priority.value}>
+                                                                    <div className={`px-2 py-0.5 rounded text-xs font-medium ${priority.color}`}>
+                                                                        {priority.label}
+                                                                    </div>
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
                                                 </TableCell>
                                                 <TableCell>
                                                     <div className="flex items-center gap-2">
@@ -625,34 +674,6 @@ export default function MyTasksPage() {
                                                         <User className="h-4 w-4 text-muted-foreground" />
                                                         <span>{task.assigned_by_name || 'Unknown'}</span>
                                                     </div>
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                            <DropdownMenuItem onClick={() => router.push(`/pages/task-detail/${task.id}`)}>
-                                                                <Eye className="mr-2 h-4 w-4" />
-                                                                View Details
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuLabel>Change Status</DropdownMenuLabel>
-                                                            {STATUS_OPTIONS.map(status => (
-                                                                <DropdownMenuItem
-                                                                    key={status.value}
-                                                                    onClick={() => handleQuickStatusChange(task, status.value)}
-                                                                    disabled={task.status === status.value}
-                                                                >
-                                                                    <status.icon className="mr-2 h-4 w-4" />
-                                                                    {status.label}
-                                                                </DropdownMenuItem>
-                                                            ))}
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
                                                 </TableCell>
                                             </TableRow>
                                         ))
@@ -752,14 +773,16 @@ export default function MyTasksPage() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="task-description">Description (Optional)</Label>
+                                <Label htmlFor="task-description">Description *</Label>
                                 <Textarea
                                     id="task-description"
                                     placeholder="Add more details about your task..."
                                     value={newTask.description}
                                     onChange={(e) => setNewTask(prev => ({ ...prev, description: e.target.value }))}
                                     rows={3}
+                                    required
                                 />
+                                <p className="text-xs text-muted-foreground">Description is required for all tasks</p>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <Checkbox
@@ -778,7 +801,7 @@ export default function MyTasksPage() {
                             </Button>
                             <Button
                                 onClick={handleCreateTask}
-                                disabled={creating || !newTask.title.trim()}
+                                disabled={creating || !newTask.title.trim() || !newTask.description.trim()}
                             >
                                 {creating ? 'Creating...' : 'Create Task'}
                             </Button>

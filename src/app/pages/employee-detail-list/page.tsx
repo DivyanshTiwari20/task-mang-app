@@ -106,15 +106,18 @@ export default function EmployeeTablePage() {
 
   const router = useRouter()
 
-  const getDefaultAvatar = (gender?: string) => {
-    switch (gender) {
-      case 'female':
-        return '/avatars/female-default.png'
-      case 'male':
-        return '/avatars/male-default.png'
-      default:
-        return '/avatars/default-avatar.png'
+  // Return empty string to avoid 404 errors for missing avatar files
+  const getDefaultAvatar = () => {
+    return ''
+  }
+
+  const getInitials = (name?: string) => {
+    if (!name) return '?'
+    const parts = name.trim().split(' ')
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
     }
+    return name.substring(0, 2).toUpperCase()
   }
 
   const fetchDepartments = useCallback(async () => {
@@ -543,15 +546,18 @@ export default function EmployeeTablePage() {
                         }}
                       >
                         <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-primary/10 text-primary">
+                          {employee.profile_image ? (
                             <img
-                              src={employee.profile_image || getDefaultAvatar(employee.gender)}
+                              src={employee.profile_image}
                               alt={`${employee.full_name} avatar`}
                               className="w-full h-full object-cover"
                               onError={(e) => {
-                                e.currentTarget.src = getDefaultAvatar(employee.gender)
+                                e.currentTarget.style.display = 'none'
                               }}
                             />
+                          ) : null}
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                            {getInitials(employee.full_name)}
                           </AvatarFallback>
                         </Avatar>
                       </div>

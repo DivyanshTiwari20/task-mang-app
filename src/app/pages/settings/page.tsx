@@ -2,13 +2,13 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Camera, 
-  Save, 
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Camera,
+  Save,
   Loader2,
   CheckCircle,
   AlertCircle,
@@ -48,11 +48,11 @@ export default function EmployeeProfilePage() {
     profile_image: '',
     gender: 'male'
   })
-  
+
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [hasChanges, setHasChanges] = useState(false)
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
 
@@ -95,15 +95,9 @@ export default function EmployeeProfilePage() {
     }
   }
 
-  const getDefaultAvatar = (gender: string) => {
-    switch (gender) {
-      case 'female':
-        return '/avatars/female-default.png'
-      case 'male':
-        return '/avatars/male-default.png'
-      default:
-        return '/avatars/default-avatar.png'
-    }
+  // Return empty string to avoid 404 errors for missing avatar files
+  const getDefaultAvatar = () => {
+    return ''
   }
 
   const handleInputChange = (field: keyof EmployeeProfile, value: string) => {
@@ -209,11 +203,10 @@ export default function EmployeeProfilePage() {
 
         {/* Success/Error Message */}
         {message && (
-          <div className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${
-            message.type === 'success' 
-              ? 'bg-green-50 text-green-800 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800/30' 
-              : 'bg-red-50 text-red-800 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800/30'
-          }`}>
+          <div className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${message.type === 'success'
+            ? 'bg-green-50 text-green-800 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800/30'
+            : 'bg-red-50 text-red-800 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800/30'
+            }`}>
             {message.type === 'success' ? (
               <CheckCircle className="w-5 h-5" />
             ) : (
@@ -235,14 +228,18 @@ export default function EmployeeProfilePage() {
               </CardHeader>
               <CardContent className="text-center">
                 <div className="relative inline-block">
-                  <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden border-4 border-border mx-auto mb-4">
-                    <img
-                      src={(profile && profile.profile_image) ? profile.profile_image : getDefaultAvatar(profile?.gender ?? 'male')}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden border-4 border-border mx-auto mb-4 bg-muted flex items-center justify-center">
+                    {(profile && profile.profile_image) ? (
+                      <img
+                        src={profile.profile_image}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-16 h-16 text-muted-foreground" />
+                    )}
                   </div>
-                  
+
                   <label className="absolute bottom-2 right-2 bg-primary hover:bg-primary/90 text-primary-foreground p-2 rounded-full cursor-pointer transition-colors shadow-lg">
                     <Camera className="w-4 h-4" />
                     <input
@@ -254,14 +251,14 @@ export default function EmployeeProfilePage() {
                     />
                   </label>
                 </div>
-                
+
                 {uploading && (
                   <div className="flex items-center justify-center gap-2 text-primary">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     <span className="text-sm">Uploading...</span>
                   </div>
                 )}
-                
+
                 <p className="text-xs text-muted-foreground mt-2">
                   Click the camera icon to update your photo
                   <br />
@@ -449,11 +446,10 @@ export default function EmployeeProfilePage() {
             <button
               onClick={handleSave}
               disabled={!hasChanges || saving}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
-                hasChanges && !saving
-                  ? 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl'
-                  : 'bg-muted text-muted-foreground cursor-not-allowed'
-              }`}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${hasChanges && !saving
+                ? 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl'
+                : 'bg-muted text-muted-foreground cursor-not-allowed'
+                }`}
             >
               {saving ? (
                 <>
@@ -486,7 +482,7 @@ export default function EmployeeProfilePage() {
           </div>
 
           {/* Update Password Modal */}
-          <UpdatePasswordModal 
+          <UpdatePasswordModal
             isOpen={isPasswordModalOpen}
             onClose={() => setIsPasswordModalOpen(false)}
           />

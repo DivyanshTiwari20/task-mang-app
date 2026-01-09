@@ -111,15 +111,18 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null)
   const [isAssignSheetOpen, setIsAssignSheetOpen] = useState(false)
 
-  const getDefaultAvatar = (gender?: string) => {
-    switch (gender) {
-      case 'female':
-        return '/avatars/female-default.png'
-      case 'male':
-        return '/avatars/male-default.png'
-      default:
-        return '/avatars/default-avatar.png'
+  // Return empty string to use initials fallback instead of missing avatar files
+  const getDefaultAvatar = () => {
+    return ''
+  }
+
+  const getInitials = (name?: string) => {
+    if (!name) return '?'
+    const parts = name.trim().split(' ')
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
     }
+    return name.substring(0, 2).toUpperCase()
   }
 
   // fetchEmployees should not depend on user object directly, only on user.id, user.role, user.department_id
@@ -316,15 +319,18 @@ export function EmployeeList({ showAssignTask = false }: EmployeeListProps) {
           >
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
               <Avatar className="h-12 w-12 sm:h-14 sm:w-14 flex-shrink-0">
-                <AvatarFallback className="bg-primary/10 text-primary">
+                {employee.profile_image ? (
                   <img
-                    src={employee.profile_image || getDefaultAvatar(employee.gender)}
+                    src={employee.profile_image}
                     alt={`${employee.full_name} avatar`}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      e.currentTarget.src = getDefaultAvatar(employee.gender)
+                      e.currentTarget.style.display = 'none'
                     }}
                   />
+                ) : null}
+                <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                  {getInitials(employee.full_name)}
                 </AvatarFallback>
               </Avatar>
 
